@@ -56,7 +56,7 @@ export default function App() {
   });
   // reaching the last step of a lesson completes it (a challenge completes it when solved)
   useEffect(() => { if (step === lesson.steps.length - 1 && !s.expect) markDone(); }, [stepKey]);
-  useEffect(() => { document.title = `${lesson.title} · MySQL Step by Step`; setDrawer(false); }, [stepKey]);
+  useEffect(() => { document.title = `${lesson.title} · Lean SQL`; setDrawer(false); }, [stepKey]);
   useEffect(() => { if (theme) document.documentElement.dataset.theme = theme; }, [theme]);
 
   const next = () => {
@@ -94,7 +94,7 @@ export default function App() {
     <>
       <header className="top">
         <button className="icon-btn menu" aria-label="Open course outline" aria-expanded={drawer} onClick={() => setDrawer(!drawer)}>☰</button>
-        <a className="logo" href="#/"><span className="logo-mark" aria-hidden="true">⛁</span> MySQL <span className="hl">Step by Step</span></a>
+        <a className="logo" href="#/"><span className="logo-mark" aria-hidden="true">⛁</span> Learn SQL</a>
         <span className="spacer" />
         <SearchBox />
         <span className="spacer" />
