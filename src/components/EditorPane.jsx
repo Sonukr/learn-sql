@@ -32,7 +32,7 @@ function ResultView({ out }) {
   );
 }
 
-export default function EditorPane({ step, stepKey, db, onResetDb, onSolved }) {
+export default function EditorPane({ step, stepKey, db, onResetDb, onSolved, onVisualise }) {
   const [sql, setSql] = useState(step.sql);
   const [out, setOut] = useState(null);
   const [asUser, setAsUser] = useState(step.as || '');
@@ -74,7 +74,8 @@ export default function EditorPane({ step, stepKey, db, onResetDb, onSolved }) {
         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } }} />
       <div className="run-row">
         <button className="btn primary" onClick={run}>▶ Run <kbd>Ctrl ↵</kbd></button>
-        <button className="btn" onClick={() => setSql(step.sql)} title="Restore this step's query">↺ Restore query</button>
+        {onVisualise && <button className="btn" onClick={() => onVisualise(sql)} title="Animate this query">◉ Visualise</button>}
+        {!onVisualise && <button className="btn" onClick={() => setSql(step.sql)} title="Restore this step's query">↺ Restore query</button>}
         <button className="btn" onClick={onResetDb} title="Rebuild the practice database">⟲ Reset data</button>
         {users.length > 0 && (
           <label className="run-as">Run as

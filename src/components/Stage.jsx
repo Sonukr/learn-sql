@@ -3,7 +3,7 @@ import { play, stop, setPaused } from '../lib/scenes';
 import EditorPane from './EditorPane';
 
 // The stage React renders once; lib/scenes animates rows inside these elements.
-export default function Stage({ step, stepKey, setup, mode, setMode, db, dbVer, onResetDb, onSolved }) {
+export default function Stage({ step, stepKey, setup, custom, onVisualise, mode, setMode, db, dbVer, onResetDb, onSolved }) {
   const refs = { scene: useRef(), inner: useRef(), metrics: useRef(), legend: useRef(), caption: useRef(), bubble: useRef(), qcode: useRef() };
   const [paused, setP] = useState(false);
   const [tick, setTick] = useState(0);
@@ -12,7 +12,7 @@ export default function Stage({ step, stepKey, setup, mode, setMode, db, dbVer, 
   useEffect(() => {
     if (!visual) return;
     const ui = Object.fromEntries(Object.entries(refs).map(([k, r]) => [k, r.current]));
-    play({ ...ui, onPause: setP }, step, setup);
+    play({ ...ui, onPause: setP }, step, setup, custom);
     return stop;
   }, [stepKey, visual, tick]);
 
@@ -37,8 +37,8 @@ export default function Stage({ step, stepKey, setup, mode, setMode, db, dbVer, 
             <button role="tab" aria-selected={!visual} onClick={() => setMode('editor')} disabled={!step.sql}>⌨ Editor</button>
           </div>
           {visual && <>
-            <button className="btn" onClick={() => setTick((t) => t + 1)} title="Replay (R)">↻ Replay</button>
-            <button className="btn" onClick={() => setPaused(!paused)} title="Pause (Space)">{paused ? '▶ Play' : '❚❚ Pause'}</button>
+            <button className="btn" onClick={() => setTick((t) => t + 1)} title="Replay (R)" aria-label="Replay">↻<span className="lbl"> Replay</span></button>
+            <button className="btn" onClick={() => setPaused(!paused)} title="Pause (Space)" aria-label={paused ? 'Play' : 'Pause'}>{paused ? '▶' : '❚❚'}<span className="lbl">{paused ? ' Play' : ' Pause'}</span></button>
           </>}
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function Stage({ step, stepKey, setup, mode, setMode, db, dbVer, 
       </div>
 
       {!visual && step.sql && (
-        <EditorPane key={`${stepKey}#${dbVer}`} stepKey={stepKey} step={step} db={db} onResetDb={onResetDb} onSolved={onSolved} />
+        <EditorPane key={`${stepKey}#${dbVer}`} stepKey={stepKey} step={step} db={db} onVisualise={onVisualise} onResetDb={onResetDb} onSolved={onSolved} />
       )}
     </section>
   );
