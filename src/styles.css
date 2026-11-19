@@ -600,3 +600,4 @@ a.btn { text-decoration: none; display: inline-block; }
 .kbadge { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 8.5px; font-weight: 800; letter-spacing: .03em; line-height: 1.5; vertical-align: 2px; color: #fff; border: 1px solid rgba(0,0,0,.25); }
 .kbadge.pk { background: var(--amber); }
 .kbadge.fk { background: var(--violet); }
+.paste-size { margin-left: 10px; color: var(--muted); font-size: 11.5px; }

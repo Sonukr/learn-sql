@@ -169,11 +169,19 @@ export function buildDataset(name, statements, warnings = []) {
   return current;
 }
 
+// One import (all files together, or pasted SQL) may be at most 50 MB: it's all held in browser memory.
+export const MAX_IMPORT_BYTES = 50 * 1024 * 1024;
+const mb = (n) => `${(n / 1048576).toFixed(1)} MB`;
+function checkSize(bytes, what) {
+  if (bytes > MAX_IMPORT_BYTES) throw new Error(`${what}: ${mb(bytes)}. The limit is 50 MB per import: export fewer tables (mysqldump DB table1 table2 > part.sql) or fewer rows (--where="id <= 10000").`);
+}
+
 export async function importFiles(files) {
+  // checked from file sizes, before anything is read
+  checkSize(files.reduce((n, f) => n + f.size, 0), files.length > 1 ? `These ${files.length} files together` : files[0].name);
   const statements = [], warnings = [];
   let name = null;
   for (const f of files) {
-    if (f.size > 50 * 1024 * 1024) throw new Error(`${f.name} is ${(f.size / 1048576).toFixed(0)} MB; the limit here is 50 MB`);
     const text = await f.text();
     if (/\.(csv|tsv|txt)$/i.test(f.name) && !/^\s*(--|\/\*|CREATE|INSERT|DROP|SET)/i.test(text)) {
       const c = csvToStatements(f.name, text);
@@ -188,6 +196,7 @@ export async function importFiles(files) {
   return buildDataset(files.length > 1 && !name ? 'my_data' : name || 'my_data', statements, warnings);
 }
 export function importSql(text, name = 'my_data') {
+  checkSize(new Blob([text]).size, 'The pasted SQL');
   const c = convertDump(text);
   return buildDataset(c.dbName || name, c.statements, c.warnings);
 }

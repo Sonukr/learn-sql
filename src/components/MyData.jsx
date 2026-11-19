@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { importFiles, importSql, clearDataset, openDataset } from '../lib/importer';
+import { importFiles, importSql, clearDataset, openDataset, MAX_IMPORT_BYTES } from '../lib/importer';
 import Stage from './Stage';
 
 const fmt = (n) => Number(n).toLocaleString('en-US');
@@ -70,7 +70,7 @@ function Import({ ds, tab }) {
             onDrop={(e) => { e.preventDefault(); setOver(false); onFiles(e.dataTransfer.files); }}>
             <div className="dz-ic" aria-hidden="true">⛁</div>
             <b>{busy ? 'Importing…' : 'Drop a MySQL dump (.sql) or CSV files here'}</b>
-            <small>or click to choose files · several CSVs become several tables · up to 50 MB</small>
+            <small>or click to choose files · several CSVs become several tables · up to {MAX_IMPORT_BYTES / 1048576} MB in total</small>
             <input ref={file} type="file" multiple accept=".sql,.csv,.tsv,.txt" hidden onChange={(e) => { onFiles(e.target.files); e.target.value = ''; }} />
           </div>
 
@@ -79,6 +79,7 @@ function Import({ ds, tab }) {
             <textarea value={paste} onChange={(e) => setPaste(e.target.value)} spellCheck={false}
               placeholder={"CREATE TABLE books (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(100), year INT);\nINSERT INTO books (title, year) VALUES ('Dune', 1965), ('Neuromancer', 1984);"} />
             <button className="btn primary" disabled={!paste.trim() || busy} onClick={() => run(() => importSql(paste, 'pasted'))}>⇪ Import SQL</button>
+            <small className="paste-size">{(new Blob([paste]).size / 1048576).toFixed(2)} / {MAX_IMPORT_BYTES / 1048576} MB</small>
           </details>
 
           {error && <div className="err" role="alert">{error}</div>}
