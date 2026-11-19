@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <style>
-    .ink { stroke: #2b2620; }
-    @media (prefers-color-scheme: dark) { .ink { stroke: #efe7da; } }
+    .ink { stroke: #16192b; }
+    @media (prefers-color-scheme: dark) { .ink { stroke: #e8ebf7; } }
   </style>
   <!-- three-disk database cylinder, like the logo -->
   <g class="ink" stroke-width="4" stroke-linejoin="round">
-    <path d="M10 14v36c0 4.4 9.8 8 22 8s22-3.6 22-8V14" fill="#2f8f7f"/>
+    <path d="M10 14v36c0 4.4 9.8 8 22 8s22-3.6 22-8V14" fill="#4f46e5"/>
     <path d="M10 26c0 4.4 9.8 8 22 8s22-3.6 22-8M10 38c0 4.4 9.8 8 22 8s22-3.6 22-8" fill="none"/>
-    <ellipse cx="32" cy="14" rx="22" ry="8" fill="#5cc4ae"/>
+    <ellipse cx="32" cy="14" rx="22" ry="8" fill="#8b8cff"/>
   </g>
 </svg>

@@ -6,7 +6,7 @@ import { pad } from '../App';
 
 const Folder = ({ color }) => (
   <svg className="folder" viewBox="0 0 20 16" aria-hidden="true">
-    <path d="M1 3a2 2 0 0 1 2-2h4.5l2 2H17a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2z" fill={color} />
+    <path d="M1 3a2 2 0 0 1 2-2h4.5l2 2H17a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2z" style={{ fill: color }} />
   </svg>
 );
 

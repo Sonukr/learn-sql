@@ -91,9 +91,9 @@ const POOL = [
               <div class="cyl3d pop"><div class="disk"></div><div class="disk"></div><div class="disk"></div><span class="tag-float">⛁ shop</span></div>
               <div class="beam"></div>
               <div class="stack">
-                <div class="block pop" style="--c:#e0a03a;--d:.15s"><b>customers</b><small>who shops here · 8 rows</small></div>
-                <div class="block pop" style="--c:#3fa7a0;--d:.3s"><b>products</b><small>what we sell · 8 rows</small></div>
-                <div class="block pop" style="--c:#9a7cd6;--d:.45s"><b>orders</b><small>who bought what · 12 rows</small></div>
+                <div class="block pop" style="--c:var(--s1);--d:.15s"><b>customers</b><small>who shops here · 8 rows</small></div>
+                <div class="block pop" style="--c:var(--s2);--d:.3s"><b>products</b><small>what we sell · 8 rows</small></div>
+                <div class="block pop" style="--c:var(--s3);--d:.45s"><b>orders</b><small>who bought what · 12 rows</small></div>
               </div></div>
               <div class="model-cap">database <b>shop</b> → 3 tables</div>`,
           },
@@ -105,7 +105,7 @@ const POOL = [
               <li>The <b>primary key</b> (<code>id</code> here) is unique for every row, so each row can always be found.</li></ul>`,
             key: 'You decide the columns when you design a table. Rows come and go as the app runs.',
             viz: `<div class="model-row">
-              <div class="slab pop anatomy" style="--c:#e0a03a">
+              <div class="slab pop anatomy" style="--c:var(--s1)">
                 <div class="slab-title">customers</div>
                 <table><tr class="cols"><th>id <em>PK</em></th><th>name</th><th>city</th></tr>
                 <tr><td>1</td><td>Asha Rao</td><td>Mumbai</td></tr>
@@ -372,10 +372,10 @@ const POOL = [
               <p>Since MySQL 5.7, the default <code>ONLY_FULL_GROUP_BY</code> mode rejects queries that break this rule. The left query is ambiguous: a category has many product names, so which one should MySQL show?</p>
               <p><i>Note: this practice sandbox (SQLite) is more lenient than MySQL, so follow the rule anyway.</i></p>`,
             viz: `<div class="model-row">
-              <div class="slab pop code bad" style="--c:#e0725f"><div class="slab-title">✗ MySQL error 1055</div><pre>SELECT category, <u>name</u>, COUNT(*)
+              <div class="slab pop code bad" style="--c:var(--s4)"><div class="slab-title">✗ MySQL error 1055</div><pre>SELECT category, <u>name</u>, COUNT(*)
 FROM products
 GROUP BY category;</pre><small>Electronics has 3 names. Which one?</small></div>
-              <div class="slab pop code good" style="--c:#7bb05a;--d:.2s"><div class="slab-title">✓ Valid</div><pre>SELECT category, COUNT(*)
+              <div class="slab pop code good" style="--c:var(--s6);--d:.2s"><div class="slab-title">✓ Valid</div><pre>SELECT category, COUNT(*)
 FROM products
 GROUP BY category;</pre><small>One clear value per group.</small></div></div>`,
           },
@@ -406,11 +406,11 @@ GROUP BY category;</pre><small>One clear value per group.</small></div></div>`,
               <p>That pointer is a <b>foreign key</b>. Each fact is stored once, so a renamed customer only needs updating in one place.</p>`,
             key: 'A JOIN follows the key from one table to the other and puts the rows side by side.',
             viz: `<div class="model-row">
-              <div class="slab pop" style="--c:#3fa7a0"><div class="slab-title">orders</div>
+              <div class="slab pop" style="--c:var(--s2)"><div class="slab-title">orders</div>
                 <table><tr class="cols"><th>id</th><th>customer_id <em>FK</em></th><th>qty</th></tr>
                 <tr><td>3</td><td class="k">2</td><td>2</td></tr><tr><td>10</td><td class="k">2</td><td>1</td></tr></table></div>
               <div class="fk-beam"><span>customer_id → id</span></div>
-              <div class="slab pop" style="--c:#e0a03a;--d:.2s"><div class="slab-title">customers</div>
+              <div class="slab pop" style="--c:var(--s1);--d:.2s"><div class="slab-title">customers</div>
                 <table><tr class="cols"><th>id <em>PK</em></th><th>name</th></tr>
                 <tr><td>1</td><td>Asha Rao</td></tr><tr><td class="k">2</td><td>Ben Carter</td></tr><tr><td>3</td><td>Chen Wei</td></tr></table></div></div>
               <div class="model-cap">Two orders point at the <b>same</b> customer. The name is stored once.</div>`,
@@ -528,9 +528,9 @@ GROUP BY category;</pre><small>One clear value per group.</small></div></div>`,
               <li>MySQL's <code>--safe-updates</code> mode (on by default in Workbench) blocks UPDATE and DELETE without a key in the WHERE.</li>
               <li>Or wrap risky changes in a transaction (next lesson).</li></ul>`,
             viz: `<div class="model-row">
-              <div class="slab pop code bad" style="--c:#e0725f"><div class="slab-title">✗ every price is now 0</div><pre>UPDATE products
+              <div class="slab pop code bad" style="--c:var(--s4)"><div class="slab-title">✗ every price is now 0</div><pre>UPDATE products
 SET price = 0;</pre><small>8 rows changed. Oops.</small></div>
-              <div class="slab pop code good" style="--c:#7bb05a;--d:.2s"><div class="slab-title">✓ preview, then change</div><pre>SELECT * FROM products
+              <div class="slab pop code good" style="--c:var(--s6);--d:.2s"><div class="slab-title">✓ preview, then change</div><pre>SELECT * FROM products
 WHERE id = 3;      -- 1 row ✓
 UPDATE products
 SET price = 0
@@ -555,11 +555,11 @@ WHERE id = 3;</pre><small>1 row changed.</small></div></div>`,
               <li><code>DROP TABLE t</code> removes the data <b>and</b> the table itself.</li></ul>
               <p><i>TRUNCATE and DROP aren't run in this sandbox. They're shown here so you can see the difference.</i></p>`,
             viz: `<div class="model-row">
-              <div class="slab pop mini" style="--c:#e0a03a"><div class="slab-title">DELETE … WHERE</div>
+              <div class="slab pop mini" style="--c:var(--s1)"><div class="slab-title">DELETE … WHERE</div>
                 <div class="minirows"><i></i><i class="x"></i><i></i><i class="x"></i><i></i></div><small>some rows gone</small></div>
-              <div class="slab pop mini" style="--c:#5c8fd9;--d:.15s"><div class="slab-title">TRUNCATE</div>
+              <div class="slab pop mini" style="--c:var(--s5);--d:.15s"><div class="slab-title">TRUNCATE</div>
                 <div class="minirows"><i class="x"></i><i class="x"></i><i class="x"></i><i class="x"></i><i class="x"></i></div><small>empty, table remains</small></div>
-              <div class="slab pop mini ghosted" style="--c:#e0725f;--d:.3s"><div class="slab-title">DROP</div>
+              <div class="slab pop mini ghosted" style="--c:var(--s4);--d:.3s"><div class="slab-title">DROP</div>
                 <div class="minirows"></div><small>table is gone</small></div></div>`,
           },
           {
@@ -583,12 +583,12 @@ WHERE id = 3;</pre><small>1 row changed.</small></div></div>`,
               <p>A <b>transaction</b> wraps both changes: either all of them become permanent (<code>COMMIT</code>) or none do (<code>ROLLBACK</code>).</p>`,
             key: 'ACID: Atomic (all or nothing), Consistent (rules hold), Isolated (others don’t see half-done work), Durable (committed means saved).',
             viz: `<div class="model-row flow">
-              <div class="block pop" style="--c:#5c8fd9"><b>START</b><small>TRANSACTION</small></div><span class="flow-arrow">→</span>
-              <div class="block pop" style="--c:#7bb05a;--d:.15s"><b>INSERT</b><small>new order</small></div><span class="flow-arrow">→</span>
-              <div class="block pop" style="--c:#e0a03a;--d:.3s"><b>UPDATE</b><small>stock − 2</small></div><span class="flow-arrow">→</span>
+              <div class="block pop" style="--c:var(--s5)"><b>START</b><small>TRANSACTION</small></div><span class="flow-arrow">→</span>
+              <div class="block pop" style="--c:var(--s6);--d:.15s"><b>INSERT</b><small>new order</small></div><span class="flow-arrow">→</span>
+              <div class="block pop" style="--c:var(--s1);--d:.3s"><b>UPDATE</b><small>stock − 2</small></div><span class="flow-arrow">→</span>
               <div class="fork">
-                <div class="block pop" style="--c:#3fa7a0;--d:.45s"><b>COMMIT ✓</b><small>both saved</small></div>
-                <div class="block pop" style="--c:#e0725f;--d:.6s"><b>ROLLBACK ↺</b><small>both undone</small></div>
+                <div class="block pop" style="--c:var(--s2);--d:.45s"><b>COMMIT ✓</b><small>both saved</small></div>
+                <div class="block pop" style="--c:var(--s4);--d:.6s"><b>ROLLBACK ↺</b><small>both undone</small></div>
               </div></div>`,
           },
           {
@@ -615,9 +615,9 @@ WHERE id = 3;</pre><small>1 row changed.</small></div></div>`,
               <ul><li><code>SET autocommit = 0;</code> keeps a transaction open until you COMMIT.</li>
               <li>DDL such as <code>CREATE</code>, <code>ALTER</code> and <code>DROP</code> <b>implicitly commits</b>, and can't be rolled back.</li></ul>`,
             viz: `<div class="model-row">
-              <div class="slab pop code" style="--c:#5c8fd9"><div class="slab-title">autocommit = 1 (default)</div><pre>UPDATE products SET …;  -- saved
+              <div class="slab pop code" style="--c:var(--s5)"><div class="slab-title">autocommit = 1 (default)</div><pre>UPDATE products SET …;  -- saved
 DELETE FROM orders …;   -- saved</pre><small>each statement commits on its own</small></div>
-              <div class="slab pop code" style="--c:#9a7cd6;--d:.2s"><div class="slab-title">explicit transaction</div><pre>START TRANSACTION;
+              <div class="slab pop code" style="--c:var(--s3);--d:.2s"><div class="slab-title">explicit transaction</div><pre>START TRANSACTION;
 UPDATE products SET …;
 DELETE FROM orders …;
 COMMIT;                 -- saved together</pre><small>one unit of work</small></div></div>`,
@@ -627,13 +627,13 @@ COMMIT;                 -- saved together</pre><small>one unit of work</small></
             body: `<p>While your transaction is open, other sessions keep seeing the <b>last committed</b> data. InnoDB's default level is <code>REPEATABLE READ</code>: inside one transaction, reading the same rows again gives the same answer.</p>
               <p>Rows you're changing are <b>locked</b>. Another session trying to update the same row waits until you COMMIT or ROLLBACK, so keep transactions short.</p>`,
             viz: `<div class="model-row">
-              <div class="slab pop code" style="--c:#e0a03a"><div class="slab-title">Session A</div><pre>START TRANSACTION;
+              <div class="slab pop code" style="--c:var(--s1)"><div class="slab-title">Session A</div><pre>START TRANSACTION;
 UPDATE products
   SET stock = 23
   WHERE id = 1;
 <span class="t">…thinking…</span>
 COMMIT;</pre></div>
-              <div class="slab pop code" style="--c:#3fa7a0;--d:.2s"><div class="slab-title">Session B</div><pre>SELECT stock … id = 1;
+              <div class="slab pop code" style="--c:var(--s2);--d:.2s"><div class="slab-title">Session B</div><pre>SELECT stock … id = 1;
 <span class="t">→ 25 (old value)</span>
 UPDATE products … id = 1;
 <span class="t">⏳ waits for A's lock</span>
@@ -675,15 +675,15 @@ UPDATE products … id = 1;
               <p>MySQL then enforces that contract on every INSERT and UPDATE, forever. Good types catch bugs early, save disk and memory, and make indexes faster.</p>`,
             key: 'Pick the smallest type that will always fit the data, not the biggest one that might.',
             viz: `<div class="model-row">
-              <div class="slab schema pop" style="--c:#9a7cd6"><div class="slab-title">CREATE TABLE suppliers</div><table>
+              <div class="slab schema pop" style="--c:var(--s3)"><div class="slab-title">CREATE TABLE suppliers</div><table>
                 <tr class="pop" style="--d:.1s"><td class="sc-name">id</td><td class="sc-type">INT</td><td><span class="chip pk">PK</span><span class="chip ai">AUTO_INCREMENT</span></td></tr>
                 <tr class="pop" style="--d:.3s"><td class="sc-name">name</td><td class="sc-type">VARCHAR(60)</td><td><span class="chip nn">NOT NULL</span></td></tr>
                 <tr class="pop" style="--d:.5s"><td class="sc-name">rating</td><td class="sc-type">DECIMAL(3,1)</td><td></td></tr>
                 <tr class="pop" style="--d:.7s"><td class="sc-name">created_at</td><td class="sc-type">DATETIME</td><td><span class="chip df">DEFAULT CURRENT_TIMESTAMP</span></td></tr></table></div>
               <div class="stack">
-                <div class="block pop" style="--c:#5c8fd9;--d:.4s"><b>name</b><small>what to call it</small></div>
-                <div class="block pop" style="--c:#9a7cd6;--d:.6s"><b>type</b><small>what kind of value fits</small></div>
-                <div class="block pop" style="--c:#e0725f;--d:.8s"><b>rules</b><small>NOT NULL, DEFAULT, keys…</small></div>
+                <div class="block pop" style="--c:var(--s5);--d:.4s"><b>name</b><small>what to call it</small></div>
+                <div class="block pop" style="--c:var(--s3);--d:.6s"><b>type</b><small>what kind of value fits</small></div>
+                <div class="block pop" style="--c:var(--s4);--d:.8s"><b>rules</b><small>NOT NULL, DEFAULT, keys…</small></div>
               </div></div>`,
           },
           {
@@ -702,12 +702,12 @@ UPDATE products … id = 1;
               <li><b>Approximate</b>: <code>FLOAT</code> / <code>DOUBLE</code>, which are fast but binary fractions, so 0.1 + 0.2 ≠ 0.3. Fine for sensor readings, wrong for prices.</li></ul>`,
             key: 'Money is always DECIMAL. A FLOAT price will be off by a fraction of a cent, and eventually someone notices.',
             viz: `<div class="model-row">
-              <div class="slab pop code" style="--c:#3fa7a0"><div class="slab-title">INT</div><pre>42
+              <div class="slab pop code" style="--c:var(--s2)"><div class="slab-title">INT</div><pre>42
 -7
 2147483647  -- max</pre><small>counts, ids, quantities</small></div>
-              <div class="slab pop code good" style="--c:#7bb05a;--d:.15s"><div class="slab-title">DECIMAL(8,2)</div><pre>0.10 + 0.20
+              <div class="slab pop code good" style="--c:var(--s6);--d:.15s"><div class="slab-title">DECIMAL(8,2)</div><pre>0.10 + 0.20
 = 0.30  ✓</pre><small>money, exact amounts</small></div>
-              <div class="slab pop code bad" style="--c:#e0725f;--d:.3s"><div class="slab-title">FLOAT</div><pre>0.1 + 0.2
+              <div class="slab pop code bad" style="--c:var(--s4);--d:.3s"><div class="slab-title">FLOAT</div><pre>0.1 + 0.2
 = 0.30000000000000004</pre><small>approximate values only</small></div></div>`,
           },
           {
@@ -773,11 +773,11 @@ UPDATE products … id = 1;
               <p>A <b>primary key</b> can be <i>natural</i> (an ISBN, a country code) or <i>surrogate</i> (an AUTO_INCREMENT id). Surrogate keys never change, so they make the safest default.</p>`,
             key: 'App checks give friendly messages. Database constraints are what actually keep the data correct.',
             viz: `<div class="model-row" style="max-width:640px">
-              <div class="block pop" style="--c:#e0a03a"><b>PRIMARY KEY</b><small>unique + not null: the row’s identity</small></div>
-              <div class="block pop" style="--c:#9a7cd6;--d:.1s"><b>UNIQUE</b><small>no two rows share this value</small></div>
-              <div class="block pop" style="--c:#5c8fd9;--d:.2s"><b>NOT NULL</b><small>a value is required</small></div>
-              <div class="block pop" style="--c:#e0725f;--d:.3s"><b>CHECK</b><small>any rule: price &gt; 0</small></div>
-              <div class="block pop" style="--c:#7bb05a;--d:.4s"><b>FOREIGN KEY</b><small>must point at a real row</small></div></div>`,
+              <div class="block pop" style="--c:var(--s1)"><b>PRIMARY KEY</b><small>unique + not null: the row’s identity</small></div>
+              <div class="block pop" style="--c:var(--s3);--d:.1s"><b>UNIQUE</b><small>no two rows share this value</small></div>
+              <div class="block pop" style="--c:var(--s5);--d:.2s"><b>NOT NULL</b><small>a value is required</small></div>
+              <div class="block pop" style="--c:var(--s4);--d:.3s"><b>CHECK</b><small>any rule: price &gt; 0</small></div>
+              <div class="block pop" style="--c:var(--s6);--d:.4s"><b>FOREIGN KEY</b><small>must point at a real row</small></div></div>`,
           },
           {
             title: 'UNIQUE and NOT NULL', short: 'UNIQUE',
@@ -836,7 +836,7 @@ UPDATE products … id = 1;
               <ul><li><b>Update anomaly</b>: you change her email in one row, and the others disagree.</li>
               <li><b>Insert anomaly</b>: you can't store a customer until they've ordered something.</li>
               <li><b>Delete anomaly</b>: delete Ben's only order, and Ben himself disappears.</li></ul>`,
-            viz: `<div class="model-row"><div class="slab pop flat" style="--c:#e0725f"><div class="slab-title">orders_flat</div>
+            viz: `<div class="model-row"><div class="slab pop flat" style="--c:var(--s4)"><div class="slab-title">orders_flat</div>
               <table><tr class="cols"><th>order_id</th><th>customer</th><th>email</th><th>product</th><th>price</th></tr>
               <tr><td>1</td><td class="rep">Asha Rao</td><td class="rep">asha.rao@gmail.com</td><td>Mechanical Keyboard</td><td>89.00</td></tr>
               <tr><td>2</td><td class="rep">Asha Rao</td><td class="rep">asha.rao@gmail.com</td><td>Notebook A5</td><td>6.00</td></tr>
@@ -857,10 +857,10 @@ UPDATE products … id = 1;
             body: `<p><b>First normal form</b>: every cell holds <b>one</b> value, and there are no repeating groups like <code>product1, product2, product3</code> columns.</p>
               <p>A list squeezed into one cell can't be searched, indexed, joined or validated. Give each item its own row.</p>`,
             viz: `<div class="model-row">
-              <div class="slab pop" style="--c:#e0725f"><div class="slab-title">✗ not 1NF</div><table><tr class="cols"><th>order_id</th><th>products</th></tr>
+              <div class="slab pop" style="--c:var(--s4)"><div class="slab-title">✗ not 1NF</div><table><tr class="cols"><th>order_id</th><th>products</th></tr>
                 <tr><td>1</td><td class="bad-cell">Keyboard, Notebook</td></tr><tr><td>3</td><td>Mouse</td></tr></table></div>
               <span class="flow-arrow">→</span>
-              <div class="slab pop" style="--c:#7bb05a;--d:.2s"><div class="slab-title">✓ 1NF</div><table><tr class="cols"><th>order_id</th><th>product</th></tr>
+              <div class="slab pop" style="--c:var(--s6);--d:.2s"><div class="slab-title">✓ 1NF</div><table><tr class="cols"><th>order_id</th><th>product</th></tr>
                 <tr><td>1</td><td>Keyboard</td></tr><tr><td>1</td><td>Notebook</td></tr><tr><td>3</td><td>Mouse</td></tr></table></div></div>`,
           },
           {
@@ -889,10 +889,10 @@ UPDATE products … id = 1;
               <li>reporting tables rebuilt each night</li></ul>
               <p>Denormalize only when you've measured a real need, and decide who keeps the copy up to date.</p>`,
             viz: `<div class="model-row">
-              <div class="slab pop code good" style="--c:#7bb05a"><div class="slab-title">normalized</div><pre>+ one source of truth
+              <div class="slab pop code good" style="--c:var(--s6)"><div class="slab-title">normalized</div><pre>+ one source of truth
 + simple, safe writes
 − reads need JOINs</pre></div>
-              <div class="slab pop code" style="--c:#e0a03a;--d:.2s"><div class="slab-title">denormalized</div><pre>+ fast, simple reads
+              <div class="slab pop code" style="--c:var(--s1);--d:.2s"><div class="slab-title">denormalized</div><pre>+ fast, simple reads
 − copies can drift
 − every write does more</pre></div></div>`,
           },
@@ -924,11 +924,11 @@ UPDATE products … id = 1;
               <p>To find one user's visits without help, MySQL must read <b>every</b> row and check it. An <b>index</b> works like the index at the back of a book: look the value up in a sorted list, then jump straight to the right pages.</p>`,
             key: 'An index trades a little disk space and slower writes for dramatically faster reads.',
             viz: `<div class="model-row">
-              <div class="slab pop code bad" style="--c:#e0725f"><div class="slab-title">without an index</div><pre>row 1 … user 7920?  no
+              <div class="slab pop code bad" style="--c:var(--s4)"><div class="slab-title">without an index</div><pre>row 1 … user 7920?  no
 row 2 … user 4839?  no
 row 3 … user 2758?  no
 … 49,997 more checks</pre><small>reads every page of the book</small></div>
-              <div class="slab pop code good" style="--c:#7bb05a;--d:.2s"><div class="slab-title">with an index</div><pre>index: … 1233 → 1234 → 1235 …
+              <div class="slab pop code good" style="--c:var(--s6);--d:.2s"><div class="slab-title">with an index</div><pre>index: … 1233 → 1234 → 1235 …
        user 1234 → rows
        5246, 10246, 15246 …</pre><small>looks it up, jumps to the pages</small></div></div>`,
           },
@@ -988,9 +988,9 @@ row 3 … user 2758?  no
               <li>Unused indexes are pure cost. Check <code>sys.schema_unused_indexes</code> in MySQL.</li></ul>
               <p>Use <code>SHOW INDEX FROM page_views;</code> to list indexes. The <b>Cardinality</b> column estimates how many distinct values each one has.</p>`,
             viz: `<div class="model-row">
-              <div class="block pop" style="--c:#7bb05a"><b>reads</b><small>faster with the right index</small></div>
-              <div class="block pop" style="--c:#e0725f;--d:.15s"><b>writes</b><small>slower with every index</small></div>
-              <div class="block pop" style="--c:#5c8fd9;--d:.3s"><b>space</b><small>each index is another B-tree</small></div></div>`,
+              <div class="block pop" style="--c:var(--s6)"><b>reads</b><small>faster with the right index</small></div>
+              <div class="block pop" style="--c:var(--s4);--d:.15s"><b>writes</b><small>slower with every index</small></div>
+              <div class="block pop" style="--c:var(--s5);--d:.3s"><b>space</b><small>each index is another B-tree</small></div></div>`,
           },
           {
             title: 'Your turn: speed up a page', short: 'Challenge',
@@ -1026,12 +1026,12 @@ row 3 … user 2758?  no
               <li><code>ALL</code>: reads the whole table</li></ul>`,
             key: 'ALL on a big table inside a frequent query is the first thing to fix.',
             viz: `<div class="model-row" style="max-width:560px">
-              <div class="block pop" style="--c:#3fa7a0"><b>const</b><small>1 row, by key</small></div>
-              <div class="block pop" style="--c:#3fa7a0;--d:.1s"><b>eq_ref</b><small>1 row per join row</small></div>
-              <div class="block pop" style="--c:#7bb05a;--d:.2s"><b>ref</b><small>a few rows via index</small></div>
-              <div class="block pop" style="--c:#e0a03a;--d:.3s"><b>range</b><small>a slice of the index</small></div>
-              <div class="block pop" style="--c:#e0725f;--d:.4s"><b>index</b><small>the whole index</small></div>
-              <div class="block pop" style="--c:#c0503a;--d:.5s"><b>ALL</b><small>the whole table</small></div></div>`,
+              <div class="block pop" style="--c:var(--s2)"><b>const</b><small>1 row, by key</small></div>
+              <div class="block pop" style="--c:var(--s2);--d:.1s"><b>eq_ref</b><small>1 row per join row</small></div>
+              <div class="block pop" style="--c:var(--s6);--d:.2s"><b>ref</b><small>a few rows via index</small></div>
+              <div class="block pop" style="--c:var(--s1);--d:.3s"><b>range</b><small>a slice of the index</small></div>
+              <div class="block pop" style="--c:var(--s4);--d:.4s"><b>index</b><small>the whole index</small></div>
+              <div class="block pop" style="--c:var(--bad);--d:.5s"><b>ALL</b><small>the whole table</small></div></div>`,
           },
           {
             title: 'const: one row by primary key', short: 'const',
@@ -1140,10 +1140,10 @@ row 3 … user 2758?  no
               <li>You're building an intermediate result: use a <b>derived table or CTE</b>.</li></ul>
               <p>Whichever you write, <b>EXPLAIN</b> it. The optimizer often rewrites one form into another, and EXPLAIN shows what it actually does.</p>`,
             viz: `<div class="model-row" style="max-width:560px">
-              <div class="block pop" style="--c:#3fa7a0"><b>JOIN</b><small>columns from both sides</small></div>
-              <div class="block pop" style="--c:#9a7cd6;--d:.1s"><b>EXISTS</b><small>“is there any…?”</small></div>
-              <div class="block pop" style="--c:#e0a03a;--d:.2s"><b>scalar</b><small>compare with one value</small></div>
-              <div class="block pop" style="--c:#5c8fd9;--d:.3s"><b>derived / CTE</b><small>a step-by-step result</small></div></div>`,
+              <div class="block pop" style="--c:var(--s2)"><b>JOIN</b><small>columns from both sides</small></div>
+              <div class="block pop" style="--c:var(--s3);--d:.1s"><b>EXISTS</b><small>“is there any…?”</small></div>
+              <div class="block pop" style="--c:var(--s1);--d:.2s"><b>scalar</b><small>compare with one value</small></div>
+              <div class="block pop" style="--c:var(--s5);--d:.3s"><b>derived / CTE</b><small>a step-by-step result</small></div></div>`,
           },
           {
             title: 'Your turn: above their category average', short: 'Challenge',
@@ -1263,9 +1263,9 @@ const NEW = {
           <li>Names come from the first SELECT.</li><li>One ORDER BY / LIMIT at the end applies to the whole result. Wrap a part in parentheses to sort it on its own.</li></ul>
           <p><b>JOIN vs UNION:</b> a JOIN puts tables side by side and adds <i>columns</i>. A UNION stacks results and adds <i>rows</i>.</p>`,
         viz: `<div class="model-row">
-          <div class="slab pop code" style="--c:#3fa7a0"><div class="slab-title">JOIN → wider</div><pre>name     | product
+          <div class="slab pop code" style="--c:var(--s2)"><div class="slab-title">JOIN → wider</div><pre>name     | product
 Asha Rao | Keyboard</pre><small>columns from both tables</small></div>
-          <div class="slab pop code" style="--c:#9a7cd6;--d:.2s"><div class="slab-title">UNION → taller</div><pre>city
+          <div class="slab pop code" style="--c:var(--s3);--d:.2s"><div class="slab-title">UNION → taller</div><pre>city
 Mumbai     ← customers
 Lisbon     ← suppliers</pre><small>rows from both queries</small></div></div>`,
       },
@@ -1337,11 +1337,11 @@ Lisbon     ← suppliers</pre><small>rows from both queries</small></div></div>`
         body: `<p><code>GROUP BY</code> collapses each group into one row, so you lose the details. A <b>window function</b> computes the same kind of value but <b>keeps every row</b>: each product can see its category's average next to its own price.</p>
           <p>The magic word is <code>OVER (…)</code>, which says which rows form the "window" for each row.</p>`,
         viz: `<div class="model-row">
-          <div class="slab pop code" style="--c:#e0a03a"><div class="slab-title">GROUP BY</div><pre>category    | avg
+          <div class="slab pop code" style="--c:var(--s1)"><div class="slab-title">GROUP BY</div><pre>category    | avg
 Electronics | 54.50
 Home        | 34.50
 Stationery  |  9.00</pre><small>3 rows: details gone</small></div>
-          <div class="slab pop code" style="--c:#9a7cd6;--d:.2s"><div class="slab-title">AVG(price) OVER (PARTITION BY category)</div><pre>Keyboard  89.00 | 54.50
+          <div class="slab pop code" style="--c:var(--s3);--d:.2s"><div class="slab-title">AVG(price) OVER (PARTITION BY category)</div><pre>Keyboard  89.00 | 54.50
 Mouse     29.50 | 54.50
 Hub       45.00 | 54.50
 Lamp      39.99 | 34.50 …</pre><small>8 rows: every product keeps its row</small></div></div>`,
@@ -1590,12 +1590,12 @@ Lamp      39.99 | 34.50 …</pre><small>8 rows: every product keeps its row</sma
           <ul><li><b>Simplify</b>: hide a 3-table join behind one name</li><li><b>Secure</b>: expose some columns, and grant access to the view only</li>
           <li><b>Stabilise</b>: change the tables underneath without changing the view's shape</li></ul>`,
         viz: `<div class="model-row">
-          <div class="slab code view pop" style="--c:#e0a03a"><div class="slab-title">VIEW order_details</div><pre>SELECT o.id, c.name, p.name …
+          <div class="slab code view pop" style="--c:var(--s1)"><div class="slab-title">VIEW order_details</div><pre>SELECT o.id, c.name, p.name …
 FROM orders o
 JOIN customers c …
 JOIN products p …</pre><small>a saved query: no rows are stored</small></div>
           <span class="flow-arrow">→</span>
-          <div class="block pop" style="--c:#3fa7a0;--d:.2s"><b>SELECT * FROM order_details</b><small>reads like a table</small></div></div>`,
+          <div class="block pop" style="--c:var(--s2);--d:.2s"><b>SELECT * FROM order_details</b><small>reads like a table</small></div></div>`,
       },
       {
         title: 'Create a view', short: 'CREATE VIEW',
@@ -1637,9 +1637,9 @@ JOIN products p …</pre><small>a saved query: no rows are stored</small></div>
           <p>If one account is compromised, the damage is limited to what it was allowed to do.</p>`,
         key: 'Principle of least privilege: grant the minimum, and add more only when needed.',
         viz: `<div class="model-row">
-          <div class="block pop" style="--c:#3d3a36"><b>root</b><small>everything · admins only</small></div>
-          <div class="block pop" style="--c:#3fa7a0;--d:.15s"><b>shop_app</b><small>SELECT, INSERT, UPDATE on shop</small></div>
-          <div class="block pop" style="--c:#9a7cd6;--d:.3s"><b>analyst</b><small>SELECT only</small></div></div>`,
+          <div class="block pop" style="--c:var(--s-neutral)"><b>root</b><small>everything · admins only</small></div>
+          <div class="block pop" style="--c:var(--s2);--d:.15s"><b>shop_app</b><small>SELECT, INSERT, UPDATE on shop</small></div>
+          <div class="block pop" style="--c:var(--s3);--d:.3s"><b>analyst</b><small>SELECT only</small></div></div>`,
       },
       {
         title: 'Create a user', short: 'CREATE USER',
@@ -1696,9 +1696,9 @@ JOIN products p …</pre><small>a saved query: no rows are stored</small></div>
           <ul><li>shared business rules (every app places orders the same way)</li><li>security: grant <code>EXECUTE</code> on the procedure, not direct table access</li></ul>
           <p>The trade-off: procedures are harder to version, test and debug than application code.</p>`,
         viz: `<div class="model-row flow">
-          <div class="block pop" style="--c:#5c8fd9"><b>app</b><small>CALL place_order(…)</small></div><span class="flow-arrow">→</span>
-          <div class="block pop" style="--c:#9a7cd6;--d:.15s"><b>MySQL server</b><small>check stock · insert · update</small></div><span class="flow-arrow">→</span>
-          <div class="block pop" style="--c:#3fa7a0;--d:.3s"><b>one reply</b><small>done, or an error</small></div></div>`,
+          <div class="block pop" style="--c:var(--s5)"><b>app</b><small>CALL place_order(…)</small></div><span class="flow-arrow">→</span>
+          <div class="block pop" style="--c:var(--s3);--d:.15s"><b>MySQL server</b><small>check stock · insert · update</small></div><span class="flow-arrow">→</span>
+          <div class="block pop" style="--c:var(--s2);--d:.3s"><b>one reply</b><small>done, or an error</small></div></div>`,
       },
       {
         title: 'Your first procedure', short: 'CREATE',

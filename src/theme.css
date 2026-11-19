@@ -1,0 +1,71 @@
+/* All colors live here. Each token is light-dark(<light value>, <dark value>); the rest of the CSS and the
+   scenes only use these var(--…) names, never raw hex.
+   Light/dark follows the OS unless <html data-theme="light|dark"> is set (the ◐ button).
+   A new theme = one block that overrides these tokens, e.g. :root[data-palette="ocean"] { --accent: …; } */
+:root {
+  color-scheme: light dark;
+
+  /* surfaces and text */
+  --bg:      light-dark(#f5f7fc, #1b2035);
+  --panel:   light-dark(#fbfcff, #20263e);
+  --card:    light-dark(#ffffff, #262d48);
+  --card-2:  light-dark(#eef1f9, #2e3655);
+  --ink:     light-dark(#16192b, #f8f9ff);
+  --muted:   light-dark(#5b6280, #c5cbe3);
+  --line:    light-dark(#dfe3f0, #3b4468);
+  --edge:    light-dark(#c7cde3, #10131f);
+  --grid:    light-dark(rgba(79, 70, 229, .06), rgba(139, 140, 255, .05));
+  --null:    light-dark(#9aa2c0, #7f88aa);
+
+  /* roles; --on-* is the text color that sits on that role's solid fill */
+  --accent:      light-dark(#4f46e5, #8b8cff);
+  --accent-soft: light-dark(#e0e7ff, #323778);
+  --on-accent:   light-dark(#ffffff, #0e1220);
+  --amber:       light-dark(#b45309, #fbbf24);
+  --amber-soft:  light-dark(#fef3c7, #4a3914);
+  --on-amber:    light-dark(#ffffff, #1a1204);
+  --violet:      light-dark(#7c3aed, #b197fc);
+  --violet-soft: light-dark(#ede9fe, #3a3168);
+  --bad:         light-dark(#e11d48, #fb7185);
+  --bad-soft:    light-dark(#ffe4e6, #52202d);
+  --on-bad:      light-dark(#ffffff, #1f0710);
+  --good:        light-dark(#047857, #34d399);
+  --good-soft:   light-dark(#d1fae5, #16463a);
+
+  /* 3D table / block colors used by the scenes and module folders (white text sits on them) */
+  --s1: #f59e0b; /* amber   */
+  --s2: #10b981; /* emerald */
+  --s3: #6366f1; /* indigo  */
+  --s4: #f43f5e; /* rose    */
+  --s5: #0ea5e9; /* sky     */
+  --s6: #22c55e; /* green: also means "valid / good" in the lessons */
+  --s-result: #4f46e5;  /* result tables */
+  --s-bad: #be123c;     /* full table scan */
+  --s-neutral: #334155; /* root user */
+
+  /* mindmap labels (white text, ≥ 4.5:1 contrast) */
+  --cat-alias: #4f46e5;
+  --cat-where: #2563eb;
+  --cat-order-by: #b45309;
+  --cat-group-by: #047857;
+  --cat-join: #c2410c;
+  --cat-functions: #be123c;
+  --cat-window-functions: #6d28d9;
+  --cat-ddl: #be185d;
+  --cat-dml: #7c3aed;
+  --cat-dcl: #0e7490;
+  --cat-tcl: #0f766e;
+
+  /* tables (scene tables, editor results, concept models); --row-h must match RH in src/lib/scenes.js */
+  --row-h: 34px;
+  --cell-x: 12px;
+  --cell-y: 7px;
+  --table-head-size: 11.5px;
+  --table-rule: color-mix(in srgb, var(--line) 85%, transparent);
+
+  /* fonts: --sans for the interface, --mono for SQL, code and the scene tables (their widths use ch units) */
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }

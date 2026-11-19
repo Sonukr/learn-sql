@@ -5,9 +5,9 @@ import { meta, dbNames, has, grantLines, showCreate } from './admin';
 import { openDataset } from './importer';
 
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-export const PALETTE = ['#e0a03a', '#3fa7a0', '#9a7cd6', '#e0725f', '#5c8fd9', '#7bb05a'];
+export const PALETTE = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s6)'];
 let ui = null;
-const RH = 30; // row height in px, must match .trow in CSS
+const RH = 34; // row height in px, must match --row-h in theme.css
 let animId = 0, paused = false;
 class Cancel extends Error {}
 
@@ -92,7 +92,8 @@ function keysOf(d, table) {
 function mkTable(name, cols, rows, opt = {}) {
   const key = (c) => opt.keys?.[String(c).toLowerCase()];
   const w = cols.map((c, i) => Math.min(26, Math.max(String(c).length + (key(c) ? 4 : 0), ...rows.map((r) => cellText(r.vals[i]).length), 2)));
-  const tpl = w.map((x) => `calc(${x}ch + 18px)`).join(' '); // 18px = cell padding
+  // 0.6em = one monospace character (more exact than ch for Geist Mono), plus cell padding on both sides
+  const tpl = w.map((x) => `calc(${x} * 0.6em + 2 * var(--cell-x) + 2px)`).join(' ');
   const cc = (i) => (opt.colColors?.[i] ? ` class="cc" style="--cc:${opt.colColors[i]}"` : '');
   const el = document.createElement('div');
   el.className = 'tbl';
@@ -253,7 +254,7 @@ async function selectScene(s, d) {
   const al = p.from.split(' ')[1] && !/^(WHERE|AS)$/i.test(p.from.split(' ')[1]) ? p.from.split(' ').pop() : p.table; // FROM customers c → c
   const tagged = p.distinct ? null : exec(s.sql.replace(/^\s*SELECT\s+/i, `SELECT ${al}.rowid AS __r, `), d);
   const final = exec(s.sql, d) || { columns: [], values: [] };
-  const res = mkTable('result', final.columns, final.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--accent)' });
+  const res = mkTable('result', final.columns, final.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--s-result)' });
   board([t.el], res.el);
   res.rows.forEach((r) => r.el.classList.add('gone'));
 
@@ -332,7 +333,7 @@ async function groupScene(s, d) {
   const color = (k) => PALETTE[keys.indexOf(k) % PALETTE.length];
   const tagged = exec(s.sql.replace(/^\s*SELECT\s+/i, `SELECT ${key} AS __k, `), d) || { values: [] };
   const final = exec(s.sql, d) || { columns: [], values: [] };
-  const res = mkTable('result', final.columns, final.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--accent)' });
+  const res = mkTable('result', final.columns, final.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--s-result)' });
   board([t.el], res.el);
   legend(keys.slice(0, 6).map((k) => [color(k), p.group ? `group: ${cellText(k)}` : 'one group (no GROUP BY)']));
 
@@ -426,9 +427,9 @@ async function joinScene(s, d) {
     const aliases = [...new Set([...it.matchAll(/\b(\w+)\./g)].map((x) => x[1]))].filter((a) => byAlias[a]);
     return aliases.length === 1 ? byAlias[aliases[0]].color : 'var(--muted)';
   });
-  const joined = mkTable(grouped ? 'joined rows' : 'result', outCols, rows.values.map((v, i) => ({ rid: i, vals: v.slice(n, n + m) })), { colColors, color: 'var(--accent)' });
+  const joined = mkTable(grouped ? 'joined rows' : 'result', outCols, rows.values.map((v, i) => ({ rid: i, vals: v.slice(n, n + m) })), { colColors, color: 'var(--s-result)' });
   const final = grouped ? exec(s.sql, d) : null;
-  const fin = final && mkTable('result', final.columns, final.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--accent)' });
+  const fin = final && mkTable('result', final.columns, final.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--s-result)' });
   const topOrder = n === 3 ? [parts[1], parts[0], parts[2]] : parts;
   board(topOrder.map((x) => x.t.el), joined.el, fin?.el, { vertical: true }); // joins: tables on top, result below
 
@@ -639,7 +640,7 @@ async function writeScene(s, d) {
       caption(kw === 'SELECT' ? 'SELECT' : st.replace(/\s+/g, ' '), kw === 'SELECT' ? 'reads the data back.' : 'shows the table definition.');
       await wait(500);
       const r = exec(st, d);
-      if (r) { const rt = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--accent)' }); resHolder.replaceChildren(rt.el); await enter(rt); }
+      if (r) { const rt = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--s-result)' }); resHolder.replaceChildren(rt.el); await enter(rt); }
       continue;
     }
     caption(...(say[kw] || [kw, '']));
@@ -744,7 +745,7 @@ async function writeScene(s, d) {
 }
 
 // ---- scene: query plans — full table scan vs B-tree index seek ----
-const TYPE_COLOR = { ALL: 'var(--bad)', index: '#e0725f', range: 'var(--amber)', ref: 'var(--good)', eq_ref: 'var(--accent)', const: 'var(--accent)' };
+const TYPE_COLOR = { ALL: 'var(--s-bad)', index: 'var(--s4)', range: 'var(--s1)', ref: 'var(--s6)', eq_ref: 'var(--s3)', const: 'var(--s3)' };
 const fmtN = (n) => Number(n).toLocaleString('en-US');
 const BARS = 48;
 
@@ -848,7 +849,7 @@ async function playAccess(d, row, card, examined) {
 
 async function planScene(s, d) {
   metrics([['type', 'Access type'], ['key', 'Key used'], ['rows', 'Rows examined'], ['time', 'Query time']]);
-  legend([['var(--bad)', 'ALL · full scan'], ['var(--amber)', 'range'], ['var(--good)', 'ref'], ['var(--accent)', 'eq_ref / const'], ['var(--violet)', 'Extra']]);
+  legend([[TYPE_COLOR.ALL, 'ALL · full scan'], [TYPE_COLOR.range, 'range'], [TYPE_COLOR.ref, 'ref'], [TYPE_COLOR.const, 'eq_ref / const'], ['var(--violet)', 'Extra']]);
   ui.inner.innerHTML = `<svg class="links"></svg><div class="plan-stack"></div>`;
   const stack = ui.inner.querySelector('.plan-stack');
   const stmts = splitStatements(s.sql);
@@ -864,7 +865,7 @@ async function planScene(s, d) {
       if (idx) {
         const b = document.createElement('div');
         b.className = 'block pop built';
-        b.style.setProperty('--c', '#7bb05a');
+        b.style.setProperty('--c', 'var(--s6)');
         b.innerHTML = `<b>✓ index ${esc(idx[1])}</b><small>on ${esc(idx[2])} (${esc(idx[3])}) · ${fmtN(d.exec(`SELECT COUNT(*) FROM ${idx[2]}`)[0].values[0][0])} entries, sorted</small>`;
         stack.append(b);
         ui.scene.scrollTo({ top: b.offsetTop, behavior: 'smooth' });
@@ -909,7 +910,7 @@ async function planScene(s, d) {
     panel.querySelector('.plan-sum').innerHTML = `<span style="--tc:${TYPE_COLOR[worst]}" class="type-badge">${esc(worst)}</span> examined ≈ <b>${fmtN(rows.filter((r) => r.id === 1).length > 1 ? product : examined)}</b> rows · <b>${ms < 1 ? ms.toFixed(3) : ms.toFixed(1)} ms</b>`;
     // the EXPLAIN output itself, as MySQL prints it
     const shown = isExplain ? result : (() => { const r = exec(q, d) || { columns: [], values: [] }; return { columns: r.columns, values: r.values.slice(0, 8), total: r.values.length }; })();
-    const t = mkTable(isExplain ? 'EXPLAIN' : `result${shown.total > 8 ? ` (first 8 of ${fmtN(shown.total)})` : ''}`, shown.columns, shown.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--accent)' });
+    const t = mkTable(isExplain ? 'EXPLAIN' : `result${shown.total > 8 ? ` (first 8 of ${fmtN(shown.total)})` : ''}`, shown.columns, shown.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--s-result)' });
     panel.querySelector('.plan-body').append(t.el);
     await enter(t);
     await wait(600);
@@ -968,7 +969,7 @@ async function windowScene(s, d) {
   const color = (p) => PALETTE[parts.indexOf(p) % PALETTE.length];
   const winCols = new Set(wins.map((w) => w.i));
   const t = mkTable(outerWhere ? 'inner query' : 'result', cols, rows.map((x, j) => ({ rid: j, vals: x.vals })),
-    { color: 'var(--accent)', colColors: cols.map((c, i) => (winCols.has(i) ? 'var(--violet)' : null)) });
+    { color: 'var(--s-result)', colColors: cols.map((c, i) => (winCols.has(i) ? 'var(--violet)' : null)) });
   board([t.el]);
   rows.forEach((x, j) => wins.forEach((w) => { const sp = t.rows.get(j).el.children[w.i]; sp.textContent = '·'; sp.classList.add('pending'); }));
   metrics([['parts', 'Windows'], ['rows', 'Rows'], ['fn', 'Function'], ['frame', 'Frame']]);
@@ -1043,7 +1044,7 @@ async function setScene(s, d) {
   metrics([['a', 'SELECT #1 rows'], ['b', parts.length > 2 ? 'Other SELECTs' : 'SELECT #2 rows'], ['dup', 'Duplicates dropped'], ['ret', 'Result']]);
   legend([...parts.map((_, i) => [PALETTE[i], `SELECT #${i + 1}`]), ['var(--bad)', 'dropped']]);
   const srcT = res.map((r, i) => mkTable(`SELECT #${i + 1}`, r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: PALETTE[i] }));
-  const out = mkTable('result', res[0].columns, [], { color: 'var(--accent)' });
+  const out = mkTable('result', res[0].columns, [], { color: 'var(--s-result)' });
   board(srcT.map((t) => t.el), out.el);
   caption('Separate queries', 'Each SELECT runs on its own first. Same number of columns in each!'); hl(none);
   await enter(...srcT);
@@ -1154,7 +1155,7 @@ async function catalogScene(s, d) {
     let r;
     try { r = exec(st, d); } catch (e) { bubble(mysqlError(e.message, st)); caption('Rejected'); await wait(3000); break; }
     render();
-    if (r) { const t = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--accent)' }); resBox.replaceChildren(t.el); await enter(t); }
+    if (r) { const t = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--s-result)' }); resBox.replaceChildren(t.el); await enter(t); }
     await wait(700);
   }
   if (!ui.bubble.textContent) caption('✓ Done'); hl(none);
@@ -1177,7 +1178,7 @@ async function privScene(s, d) {
       const card = document.createElement('div');
       card.className = `slab priv${seen.has(k) ? '' : ' pop'}${who === k ? ' connected' : ''}`;
       card.dataset.user = k;
-      card.style.setProperty('--c', '#9a7cd6');
+      card.style.setProperty('--c', 'var(--s3)');
       const cells = tables.map((t) => `<tr><th>${esc(t)}</th>${P4.map((p) => {
         const ok = has(d, k, p, 'shop', t), id = `${k}|${t}|${p}`;
         now.set(id, ok); if (ok) total++;
@@ -1217,7 +1218,7 @@ async function privScene(s, d) {
       break;
     } finally { meta(d).as = null; }
     render(who);
-    if (r) { const t = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--accent)' }); resBox.replaceChildren(t.el); await enter(t); }
+    if (r) { const t = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--s-result)' }); resBox.replaceChildren(t.el); await enter(t); }
     await wait(900);
   }
   if (!ui.bubble.textContent) caption('✓ Done'); hl(none);
@@ -1241,7 +1242,7 @@ function procCard(p) {
   const el = document.createElement('div');
   el.className = 'slab code proc pop';
   el.dataset.proc = p.name.toLowerCase();
-  el.style.setProperty('--c', '#5c8fd9');
+  el.style.setProperty('--c', 'var(--s5)');
   const sig = p.params.map((x) => `${x.mode} ${x.name} ${x.type}`).join(', ');
   el.innerHTML = `<div class="slab-title">PROCEDURE ${esc(p.name)}(${esc(sig)})</div>
     <div class="pl">BEGIN</div>${procLines(p.tree).map(([id, dep, txt]) => `<div class="pl"${id !== null ? ` data-id="${id}"` : ''} style="padding-left:${dep * 16}px">${esc(txt.replace(/\s+/g, ' ').slice(0, 72))}</div>`).join('')}<div class="pl">END</div>`;
@@ -1260,7 +1261,7 @@ async function procScene(s, d) {
   ui.inner.innerHTML = `<svg class="links"></svg><div class="board side"><div class="left-col"><div class="row-top procs"></div><div class="vars"></div></div><div class="res"></div></div>`;
   const row = ui.inner.querySelector('.procs'), varsBox = ui.inner.querySelector('.vars'), resBox = ui.inner.querySelector('.res');
   const showVars = (obj) => { varsBox.innerHTML = Object.entries(obj || {}).map(([k, v]) => `<span class="chip uq">${esc(k)} = ${esc(cellText(v))}</span>`).join(''); };
-  const showResult = async (r) => { const t = mkTable('result', r.columns, r.values.slice(0, 10).map((v, j) => ({ rid: j, vals: v })), { color: 'var(--accent)' }); resBox.replaceChildren(t.el); await enter(t); };
+  const showResult = async (r) => { const t = mkTable('result', r.columns, r.values.slice(0, 10).map((v, j) => ({ rid: j, vals: v })), { color: 'var(--s-result)' }); resBox.replaceChildren(t.el); await enter(t); };
   meta(d).procs.forEach((p) => row.append(procCard(p)));
   let stmts = 0, changed = 0, results = 0;
   ['stmts', 'changed', 'results'].forEach((k) => setM(k, 0));
@@ -1328,7 +1329,7 @@ function viewCard(name, sqlText) {
   const el = document.createElement('div');
   el.className = 'slab code view pop';
   el.dataset.view = name.toLowerCase();
-  el.style.setProperty('--c', '#e0a03a');
+  el.style.setProperty('--c', 'var(--s1)');
   const body = sqlText.replace(/^[\s\S]*?\bAS\s+(?=SELECT|WITH|\()/i, '').replace(/\s+/g, ' ');
   el.innerHTML = `<div class="slab-title">VIEW ${esc(name)}</div><pre>${esc(body.replace(/ (FROM|JOIN|WHERE|GROUP BY|ORDER BY) /gi, '\n$1 '))}</pre><small>a saved query: no rows are stored, it runs on every read</small>`;
   return el;
@@ -1338,7 +1339,7 @@ async function viewSelectScene(s, d, view) {
   legend([['var(--amber)', 'view definition']]);
   const def = d.exec(`SELECT sql FROM sqlite_master WHERE type='view' AND name='${view}'`)[0].values[0][0];
   const r = exec(s.sql, d) || { columns: [], values: [] };
-  const t = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--accent)' });
+  const t = mkTable('result', r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: 'var(--s-result)' });
   board([viewCard(view, def)], t.el);
   caption(`${view} is a view`, 'MySQL swaps in the stored query, then applies yours on top.'); hl(() => true);
   await wait(1600);
@@ -1354,15 +1355,15 @@ async function resultScene(s, d) {
     metrics([]); legend([]);
     const pre = document.createElement('div');
     pre.className = 'slab code pop';
-    pre.style.setProperty('--c', '#5c8fd9');
+    pre.style.setProperty('--c', 'var(--s5)');
     pre.innerHTML = `<div class="slab-title">SHOW CREATE TABLE</div><pre>${esc(r.values[0][1])}</pre>`;
-    board([schemaCard(r.values[0][1], '#9a7cd6'), pre]);
+    board([schemaCard(r.values[0][1], 'var(--s3)'), pre]);
     caption('SHOW CREATE TABLE', 'prints the exact DDL MySQL would use to rebuild this table, with every key and constraint named.'); hl(() => true);
     return;
   }
   metrics([['ret', 'Rows']]);
   legend([]);
-  const t = mkTable('result', r.columns, r.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--accent)' });
+  const t = mkTable('result', r.columns, r.values.map((v, i) => ({ rid: i, vals: v })), { color: 'var(--s-result)' });
   board([t.el]);
   caption(s.sql.trim().split(/\s+/).slice(0, 2).join(' ').replace(';', ''), 'asks MySQL about the database itself.'); hl(() => true);
   await enter(t);
@@ -1426,7 +1427,7 @@ export async function play(stage, s0, setup, custom = false) {
     try {
       const r = exec(s.sql, custom ? openDataset() : freshDb(setup));
       metrics([['ret', 'Rows']]); legend([]); bubble(null);
-      const t = mkTable('result', r?.columns || [], (r?.values || []).slice(0, 50).map((v, i) => ({ rid: i, vals: v })), { color: 'var(--accent)' });
+      const t = mkTable('result', r?.columns || [], (r?.values || []).slice(0, 50).map((v, i) => ({ rid: i, vals: v })), { color: 'var(--s-result)' });
       board([t.el]);
       caption('Result', 'This query is too unusual to animate step by step, so here is what it returns.');
       await enter(t);
