@@ -2,6 +2,7 @@
 // this module moves rows around inside it. `ui` holds the stage elements (set by play()).
 import { exec, freshDb, read, txOpen, mysqlError, cellText, fmt, splitTop, READ_ONLY, explain, timeQuery, splitStatements, whereOf, splitAnd, mask } from './sql';
 import { meta, dbNames, has, grantLines, showCreate } from './admin';
+import { openDataset } from './importer';
 
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const PALETTE = ['#e0a03a', '#3fa7a0', '#9a7cd6', '#e0725f', '#5c8fd9', '#7bb05a'];
@@ -77,15 +78,27 @@ function hlKw(...kws) {
 const hlStmt = (i) => hl((el) => +el.dataset.st === i);
 
 // ---- tables as animated blocks ----
+// Which columns are keys: { col: { kind: 'pk' | 'fk', title } } from the table's real definition (works for imported data too).
+function keysOf(d, table) {
+  const out = {};
+  try {
+    for (const [col] of d.exec(`SELECT name FROM pragma_table_info('${table}') WHERE pk > 0`)[0]?.values || [])
+      out[col.toLowerCase()] = { kind: 'pk', title: 'Primary key' };
+    for (const [col, ref, to] of d.exec(`SELECT "from", "table", "to" FROM pragma_foreign_key_list('${table}')`)[0]?.values || [])
+      if (!out[col.toLowerCase()]) out[col.toLowerCase()] = { kind: 'fk', title: `Foreign key → ${ref}.${to || 'id'}` };
+  } catch { /* not a table (view, result) */ }
+  return out;
+}
 function mkTable(name, cols, rows, opt = {}) {
-  const w = cols.map((c, i) => Math.min(22, Math.max(String(c).length, ...rows.map((r) => cellText(r.vals[i]).length), 2)));
+  const key = (c) => opt.keys?.[String(c).toLowerCase()];
+  const w = cols.map((c, i) => Math.min(26, Math.max(String(c).length + (key(c) ? 4 : 0), ...rows.map((r) => cellText(r.vals[i]).length), 2)));
   const tpl = w.map((x) => `calc(${x}ch + 18px)`).join(' '); // 18px = cell padding
   const cc = (i) => (opt.colColors?.[i] ? ` class="cc" style="--cc:${opt.colColors[i]}"` : '');
   const el = document.createElement('div');
   el.className = 'tbl';
   if (opt.color) el.style.setProperty('--tc', opt.color);
   el.innerHTML = `<div class="tname">${esc(name)}</div>
-    <div class="thead" style="grid-template-columns:${tpl}">${cols.map((c, i) => `<span${cc(i)}>${esc(c)}</span>`).join('')}</div>
+    <div class="thead" style="grid-template-columns:${tpl}">${cols.map((c, i) => `<span${cc(i)}>${esc(c)}${key(c) ? `<sup class="kbadge ${key(c).kind}" title="${esc(key(c).title)}">${key(c).kind.toUpperCase()}</sup>` : ''}</span>`).join('')}</div>
     <div class="tbody"></div>`;
   const t = { el, name, body: el.querySelector('.tbody'), tpl, cols, rows: new Map(), order: [], colColors: opt.colColors };
   rows.forEach((r) => addRow(t, r));
@@ -235,7 +248,7 @@ async function selectScene(s, d) {
   metrics([['scan', 'Rows scanned'], ['match', 'Matched'], ['ret', 'Returned'], ['cols', 'Columns']]);
   legend([['var(--good)', 'matches WHERE'], ['var(--bad)', 'filtered out'], ['var(--muted)', 'cut by LIMIT'], ['var(--accent)', 'in result']]);
   const src = read(d, p.table);
-  const t = mkTable(p.table, src.cols, src.rows, { color: PALETTE[0] });
+  const t = mkTable(p.table, src.cols, src.rows, { color: PALETTE[0], keys: keysOf(d, p.table) });
   // Final rows tagged with the source rowid they came from (not possible after DISTINCT collapses rows).
   const al = p.from.split(' ')[1] && !/^(WHERE|AS)$/i.test(p.from.split(' ')[1]) ? p.from.split(' ').pop() : p.table; // FROM customers c → c
   const tagged = p.distinct ? null : exec(s.sql.replace(/^\s*SELECT\s+/i, `SELECT ${al}.rowid AS __r, `), d);
@@ -311,7 +324,7 @@ async function groupScene(s, d) {
   const p = parseSelect(s.sql);
   metrics([['scan', 'Rows scanned'], ['match', 'Rows used'], ['groups', 'Groups'], ['ret', 'Returned']]);
   const src = read(d, p.table);
-  const t = mkTable(p.table, src.cols, src.rows, { color: PALETTE[0] });
+  const t = mkTable(p.table, src.cols, src.rows, { color: PALETTE[0], keys: keysOf(d, p.table) });
   const W = p.where ? ` WHERE ${p.where}` : '';
   const key = p.group || "'all rows'";
   const keyOf = new Map(exec(`SELECT rowid, ${key} FROM ${p.table}${W}`, d)?.values || []);
@@ -393,7 +406,7 @@ async function joinScene(s, d) {
   const byAlias = Object.fromEntries(parts.map((x) => [x.alias, x]));
   parts.forEach((x) => {
     const r = d.exec(`SELECT rowid, ${x.cols.join(', ')} FROM ${x.table} ORDER BY rowid`)[0];
-    x.t = mkTable(`${x.table}${x.alias !== x.table ? ' ' + x.alias : ''}`, x.cols, r.values.map((v) => ({ rid: v[0], vals: v.slice(1) })), { color: x.color });
+    x.t = mkTable(`${x.table}${x.alias !== x.table ? ' ' + x.alias : ''}`, x.cols, r.values.map((v) => ({ rid: v[0], vals: v.slice(1) })), { color: x.color, keys: keysOf(d, x.table) });
   });
 
   // One query gives, per joined row: the rowid from each table + the output columns.
@@ -427,7 +440,7 @@ async function joinScene(s, d) {
 
   const cellOf = (x, rid, col) => x.t.rows.get(rid)?.el.children[x.cols.indexOf(col)];
   const headCell = (x, col) => x.t.el.querySelectorAll('.thead span')[x.cols.indexOf(col)];
-  parts.slice(1).forEach((x) => x.pairs?.forEach((a) => headCell(byAlias[a], keyCol[a + '>' + x.alias])?.classList.add('key')));
+  parts.slice(1).forEach((x) => x.pairs?.forEach((a) => headCell(byAlias[a], keyCol[a + '>' + x.alias])?.classList.add('joinkey')));
   const joinWord = parts.some((x) => x.left) ? 'LEFT JOIN' : 'JOIN';
   caption(`${joinWord} … ON ${parts.slice(1).map((x) => x.on).join(' and ')}`, 'For each row, find the partner row whose key matches.');
   hlKw('JOIN', 'LEFT JOIN', 'INNER JOIN');
@@ -576,7 +589,7 @@ async function writeScene(s, d) {
   const addTable = (n, createSql) => {
     const r = read(d, n);
     const color = PALETTE[ci++ % PALETTE.length];
-    const t = mkTable(n, r.cols, r.rows, { color });
+    const t = mkTable(n, r.cols, r.rows, { color, keys: keysOf(d, n) });
     t.color = color;
     t.wrap = document.createElement('div');
     t.wrap.className = 'tgroup';
@@ -673,7 +686,7 @@ async function writeScene(s, d) {
     }
     if (kw === 'ALTER') {
       const old = tabs.get(target), r = read(d, target);
-      const t = mkTable(target, r.cols, r.rows, { color: old.color });
+      const t = mkTable(target, r.cols, r.rows, { color: old.color, keys: keysOf(d, target) });
       Object.assign(t, { color: old.color, wrap: old.wrap });
       old.el.replaceWith(t.el);
       tabs.set(target, t);
@@ -1359,7 +1372,7 @@ async function resultScene(s, d) {
 async function dataScene(s, d) {
   const names = [...new Set([...s.expect.matchAll(/(?:FROM|JOIN|INTO|UPDATE|REFERENCES|ON)\s+(\w+)/gi)].map((m) => m[1].toLowerCase()))].filter((n) => exists(d, n));
   metrics([]); legend([]);
-  const tabs = names.map((n, i) => { const big = d.exec(`SELECT COUNT(*) FROM ${n}`)[0].values[0][0]; const r = read(d, n, big > 30 ? 10 : 0); return mkTable(big > 30 ? `${n} (first 10 of ${big.toLocaleString('en-US')})` : n, r.cols, r.rows, { color: PALETTE[i] }); });
+  const tabs = names.map((n, i) => { const big = d.exec(`SELECT COUNT(*) FROM ${n}`)[0].values[0][0]; const r = read(d, n, big > 30 ? 10 : 0); return mkTable(big > 30 ? `${n} (first 10 of ${big.toLocaleString('en-US')})` : n, r.cols, r.rows, { color: PALETTE[i], keys: keysOf(d, n) }); });
   board(tabs.map((t) => t.el));
   caption('Your data', 'Switch to the Editor tab to write your answer.');
   await enter(...tabs);
@@ -1392,18 +1405,34 @@ function sceneFor(s, d) {
 
 export function stop() { animId++; }
 
-export async function play(stage, s, setup) {
+export async function play(stage, s0, setup, custom = false) {
+  // `name` → name for plain identifiers: the scenes' query parsing works on bare names
+  const s = s0.sql ? { ...s0, sql: s0.sql.replace(/`(\w+)`/g, '$1') } : s0;
   ui = stage;
   animId++;
   setPaused(false);
   bubble(null);
   ui.inner.innerHTML = '';
   if (s.sql && !s.expect) renderQuery(s.sql);
-  const d = freshDb(setup); // scenes run on their own copy, so they're repeatable and never touch your data
+  // scenes run on their own copy (of the shop, or of your imported data), so they're repeatable and never touch your data
+  const d = custom ? openDataset() : freshDb(setup);
   try {
     if (s.pre) exec(s.pre, d);
     await sceneFor(s, d)(s, d);
   } catch (e) {
-    if (!(e instanceof Cancel)) { console.error(e); caption('Animation error', esc(e.message)); }
+    if (e instanceof Cancel) return;
+    console.error(e);
+    // a query too unusual to animate step by step: still show what it returns
+    try {
+      const r = exec(s.sql, custom ? openDataset() : freshDb(setup));
+      metrics([['ret', 'Rows']]); legend([]); bubble(null);
+      const t = mkTable('result', r?.columns || [], (r?.values || []).slice(0, 50).map((v, i) => ({ rid: i, vals: v })), { color: 'var(--accent)' });
+      board([t.el]);
+      caption('Result', 'This query is too unusual to animate step by step, so here is what it returns.');
+      await enter(t);
+      setM('ret', r?.values.length ?? 0);
+    } catch (e2) {
+      if (!(e2 instanceof Cancel)) { caption('Error'); bubble(mysqlError(e2.message, s.sql)); }
+    }
   } finally { d.close(); }
 }

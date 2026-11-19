@@ -99,8 +99,12 @@ export function splitTop(list) { // split on commas that are not inside parenthe
 // One column definition, MySQL → SQLite. SQLite ignores declared types, so named CHECKs stand in for
 // MySQL strict mode (VARCHAR length, numeric types, ENUM values); mysqlError() maps them back.
 export function shimColumn(item) {
-  if (/^(KEY|INDEX)\b/i.test(item)) return ''; // inline indexes: not supported here
+  if (/^(KEY|INDEX|FULLTEXT|SPATIAL)\b/i.test(item)) return ''; // indexes become CREATE INDEX (see shimCreate); fulltext isn't supported
+  if (/^(?:CONSTRAINT\s+\S+\s+)?UNIQUE\s+(?:KEY|INDEX)\b/i.test(item)) return item.replace(/UNIQUE\s+(?:KEY|INDEX)\s*(?:`?\w+`?\s*)?\(/i, 'UNIQUE (');
   if (/^(PRIMARY|UNIQUE|FOREIGN|CONSTRAINT|CHECK)\b/i.test(item)) return item;
+  // column attributes SQLite doesn't know (from real dumps)
+  item = item.replace(/\s+(?:CHARACTER\s+SET|CHARSET)\s+\w+/gi, '').replace(/\s+COLLATE\s+\w+/gi, '')
+    .replace(/\s+COMMENT\s+'(?:[^']|'')*'/gi, '').replace(/\s+(ZEROFILL|SIGNED)\b/gi, '');
   const m = item.match(/^`?(\w+)`?\s+(\w+)(\s*\([^)]*\))?(\s+UNSIGNED)?([\s\S]*)$/i);
   if (!m) return item;
   let [, col, type, args = '', uns = '', rest] = m;
@@ -108,11 +112,13 @@ export function shimColumn(item) {
   rest = rest.replace(/\bON\s+UPDATE\s+CURRENT_TIMESTAMP\b/i, '');
   if (/\bAUTO_INCREMENT\b/i.test(rest)) return `${col} INTEGER${rest.replace(/\bAUTO_INCREMENT\b/i, '')}`; // INTEGER PRIMARY KEY auto-numbers
   if (T === 'ENUM') return `${col} ENUM${rest} CONSTRAINT enum_${col} CHECK (${col} IN ${args.trim()})`;
+  if (T === 'SET') return `${col} TEXT${rest}`; // SET('a','b'): stored as text here
   let check = '';
   if (/^(TINYINT|SMALLINT|MEDIUMINT|INT|INTEGER|BIGINT)$/.test(T)) check = ` CONSTRAINT type_${col} CHECK (typeof(${col}) IN ('integer', 'null'))`;
   if (/^(DECIMAL|NUMERIC|FLOAT|DOUBLE|REAL)$/.test(T)) check = ` CONSTRAINT type_${col} CHECK (typeof(${col}) IN ('integer', 'real', 'null'))`;
   if (/^(VARCHAR|CHAR)$/.test(T) && args) check = ` CONSTRAINT len_${col} CHECK (length(${col}) <= ${args.replace(/[()\s]/g, '')})`;
-  return `${col} ${type}${args}${uns}${rest}${check}`;
+  // SQLite wants the size last: `decimal unsigned(6,2)`, not MySQL's `decimal(6,2) unsigned`
+  return `${col} ${type}${uns}${args}${rest}${check}`;
 }
 function shimCreate(st) {
   const open = st.indexOf('(');
@@ -168,6 +174,7 @@ export function toSqlite(sql) {
     // only at statement start, so "ORDER BY x DESC LIMIT 3" is left alone
     .replace(/(^|;)\s*(?:DESCRIBE|DESC)\s+(?:(\w+)\.)?(\w+)\s*;?/gi, (_, p, sch, t) => p + describe(t, sch || 'main'))
     .replace(/\bDISTINCTROW\b/gi, 'DISTINCT')
+    .replace(/\bINSERT\s+IGNORE\s+INTO\b/gi, 'INSERT OR IGNORE INTO')
     .replace(/\bGREATEST\s*\(/gi, 'max(').replace(/\bLEAST\s*\(/gi, 'min(')
     .replace(/\bSTART\s+TRANSACTION\b/gi, 'BEGIN')
     .replace(/ON\s+DUPLICATE\s+KEY\s+UPDATE([^;]*)/gi, (_, set) =>
