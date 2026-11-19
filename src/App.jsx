@@ -8,6 +8,8 @@ import StepPanel from './components/StepPanel';
 import SearchBox from './components/SearchBox';
 import MyData from './components/MyData';
 import { loadSaved, onDataset, getDataset } from './lib/importer';
+import { stepView } from './lib/analytics';
+import ChatWidget from './components/ChatWidget';
 
 export const LESSONS = MODULES.flatMap((m, mi) => m.lessons.map((l, li) => ({ ...l, mod: m, modNo: mi + 1, no: li + 1 })));
 export const pad = (n) => String(n).padStart(2, '0');
@@ -63,7 +65,8 @@ export default function App() {
   });
   // reaching the last step of a lesson completes it (a challenge completes it when solved)
   useEffect(() => { if (step === lesson.steps.length - 1 && !s.expect) markDone(); }, [stepKey]);
-  useEffect(() => { document.title = `${myData ? 'My Data' : lesson.title} · Lean SQL`; setDrawer(false); }, [stepKey, myData]);
+  useEffect(() => { document.title = `${myData ? 'My Data' : lesson.title} · Learn SQL`; setDrawer(false); }, [stepKey, myData]);
+  useEffect(() => { if (!myData) stepView(lesson.id, step, { module: lesson.mod.title }); }, [stepKey, myData]);
   useEffect(() => { if (theme) document.documentElement.dataset.theme = theme; }, [theme]);
 
   const next = () => {
@@ -142,6 +145,7 @@ export default function App() {
         </aside>
         </>}
       </div>
+      <ChatWidget lessons={LESSONS} lesson={myData ? null : lesson} step={step} done={done} />
     </>
   );
 }

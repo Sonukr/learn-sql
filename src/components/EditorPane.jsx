@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { attempt, exec, READ_ONLY, fmt, tableCounts, txOpen } from '../lib/sql';
 import { meta } from '../lib/admin';
+import { queryRun } from '../lib/analytics';
 
 const MAX = 200; // rendering 50,000 rows would freeze the page
 
@@ -44,6 +45,8 @@ export default function EditorPane({ step, stepKey, db, onResetDb, onSolved, onV
     let o;
     try { o = attempt(db, step, sql); } finally { meta(db).as = null; }
     setOut(o);
+    const [lid, sidx] = (stepKey || 'my-data/0').split('/');
+    queryRun(lid, +sidx || 0, { ok: o.verdict ? o.verdict.ok : !o.error, challenge: !!step.expect, error: o.error, sql });
     if (o.verdict?.ok) onSolved();
   };
   // read-only demos show their result straight away; writes wait for Run

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MODULES } from '../lessons';
 import { Cats } from './CourseTree';
+import { searched } from '../lib/analytics';
 
 const strip = (h = '') => h.replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
@@ -71,6 +72,7 @@ export default function SearchBox() {
   }, []);
 
   const go = (r) => {
+    searched(q.trim(), results.length);
     location.hash = `#/${r.id}/${r.step + 1}`;
     setOpen(false);
     setQ('');

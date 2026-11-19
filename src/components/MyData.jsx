@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { importFiles, importSql, clearDataset, openDataset, MAX_IMPORT_BYTES } from '../lib/importer';
 import Stage from './Stage';
+import { track } from '../lib/analytics';
 
 const fmt = (n) => Number(n).toLocaleString('en-US');
 const quoteId = (n) => (/^[a-z_]\w*$/i.test(n) ? n : `\`${n}\``); // backticks only when the name needs them
@@ -56,7 +57,8 @@ function Import({ ds, tab }) {
     await new Promise((r) => setTimeout(r, 30)); // let the "Importing…" state paint before the heavy work
     try { await job(); } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
-  const onFiles = (files) => files.length && run(() => importFiles([...files]));
+  const done = (d) => track('data_import', { tables: d.tables.length, rows: d.tables.reduce((n, t) => n + t.rows, 0), failed: d.failed || 0 }); // counts only
+  const onFiles = (files) => files.length && run(async () => done(await importFiles([...files])));
 
   return (
     <>
@@ -78,7 +80,7 @@ function Import({ ds, tab }) {
             <summary>…or paste SQL (CREATE TABLE + INSERT statements)</summary>
             <textarea value={paste} onChange={(e) => setPaste(e.target.value)} spellCheck={false}
               placeholder={"CREATE TABLE books (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(100), year INT);\nINSERT INTO books (title, year) VALUES ('Dune', 1965), ('Neuromancer', 1984);"} />
-            <button className="btn primary" disabled={!paste.trim() || busy} onClick={() => run(() => importSql(paste, 'pasted'))}>⇪ Import SQL</button>
+            <button className="btn primary" disabled={!paste.trim() || busy} onClick={() => run(async () => done(importSql(paste, 'pasted')))}>⇪ Import SQL</button>
             <small className="paste-size">{(new Blob([paste]).size / 1048576).toFixed(2)} / {MAX_IMPORT_BYTES / 1048576} MB</small>
           </details>
 
