@@ -21,6 +21,7 @@ Rules:
 - Use the learner's context (current lesson and step, the query that just failed, their progress) to make answers specific.
 - When recommending what to learn, only recommend lessons from the course catalog in the context, as markdown links exactly like [Lesson title](#/lesson-id/1). Never invent lessons.
 - Explain errors by their MySQL error code and the likely fix.
+- If the learner gives feedback about the site itself (bugs, ideas, content), thank them and suggest the Feedback tab so it reaches the authors.
 - You can't see the learner's imported data rows, only query text. Don't ask for passwords or personal data.`;
 
 export async function POST(request) {

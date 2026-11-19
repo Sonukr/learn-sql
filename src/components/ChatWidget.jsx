@@ -14,20 +14,26 @@ function md(text) {
 
 export default function ChatWidget({ lessons, lesson, step, done }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState('tutor');
   const page = lesson ? `${lesson.title} · step ${step + 1}` : location.hash.startsWith('#/my-data') ? 'My Data' : 'Course';
-  useEffect(() => { if (open) track('chat_open'); }, [open]);
+  useEffect(() => { if (open) track('chat_open', { tab }); }, [open]);
 
   return (
     <>
       <button className={`chat-fab${open ? ' open' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="chat-panel"
-        aria-label={open ? 'Close the tutor' : 'Ask the SQL tutor'}>{open ? '×' : '💬'}</button>
+        aria-label={open ? 'Close the tutor' : 'Ask the tutor or send feedback'}>{open ? '×' : '💬'}</button>
       {open && (
-        <section className="chat-panel" id="chat-panel" role="dialog" aria-label="SQL tutor">
+        <section className="chat-panel" id="chat-panel" role="dialog" aria-label="Tutor and feedback">
           <header className="chat-head">
-            <b>✦ Tutor</b>
+            <div className="seg" role="tablist">
+              <button role="tab" aria-selected={tab === 'tutor'} onClick={() => setTab('tutor')}>✦ Tutor</button>
+              <button role="tab" aria-selected={tab === 'feedback'} onClick={() => setTab('feedback')}>✎ Feedback</button>
+            </div>
             <small>{page}</small>
           </header>
-          <Tutor lessons={lessons} lesson={lesson} step={step} done={done} />
+          {tab === 'tutor'
+            ? <Tutor lessons={lessons} lesson={lesson} step={step} done={done} />
+            : <Feedback lesson={lesson} page={page} done={done} lessons={lessons} />}
         </section>
       )}
     </>
@@ -105,3 +111,57 @@ function Tutor({ lessons, lesson, step, done }) {
   );
 }
 
+function Feedback({ lesson, page, done, lessons }) {
+  const [name, setName] = useState(() => { try { return localStorage.getItem('feedback-name') || ''; } catch { return ''; } });
+  const [rating, setRating] = useState(0);
+  const [category, setCategory] = useState('Idea');
+  const [comment, setComment] = useState('');
+  const [state, setState] = useState({ busy: false, sent: false, error: null });
+
+  const send = async (e) => {
+    e.preventDefault();
+    setState({ busy: true, sent: false, error: null });
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name, rating, category, comment, page, lesson: lesson?.id || '', progress: `${done.length}/${lessons.length} lessons` }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Couldn’t send (HTTP ${res.status}).`);
+      try { localStorage.setItem('feedback-name', name.trim()); } catch { /* storage blocked */ }
+      track('feedback_submit', { rating, category, lesson_id: lesson?.id || 'none' }); // the comment text stays out of analytics
+      setState({ busy: false, sent: true, error: null });
+      setComment(''); setRating(0);
+    } catch (err) { setState({ busy: false, sent: false, error: err.message }); }
+  };
+
+  if (state.sent) return (
+    <div className="chat-list"><div className="msg bot">✓ Thanks! Your feedback was saved. <a href="#/feedback">See all feedback</a></div>
+      <button className="btn" onClick={() => setState({ busy: false, sent: false, error: null })}>Send more</button></div>
+  );
+  return (
+    <form className="chat-feedback" onSubmit={send}>
+      <fieldset className="stars">
+        <legend>How is the course so far?</legend>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button type="button" key={n} aria-pressed={rating === n} aria-label={`${n} of 5`} className={n <= rating ? 'on' : ''} onClick={() => setRating(n)}>★</button>
+        ))}
+      </fieldset>
+      <label>Your name <small>(optional, shown on the feedback page)</small>
+        <input value={name} maxLength={80} autoComplete="name" onChange={(e) => setName(e.target.value)} placeholder="Anonymous" />
+      </label>
+      <label>Type
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option>Idea</option><option>Bug</option><option>Content</option><option>Other</option>
+        </select>
+      </label>
+      <label>Comment or recommendation
+        <textarea rows={5} maxLength={2000} value={comment} onChange={(e) => setComment(e.target.value)}
+          placeholder="What would make this better? Anything confusing on this page?" />
+      </label>
+      {state.error && <div className="err" role="alert">{state.error}</div>}
+      <button className="btn primary" disabled={state.busy || (!rating && comment.trim().length < 3)}>{state.busy ? 'Sending…' : 'Send feedback'}</button>
+      <p className="chat-note">Sent with the page you're on ({page}). Feedback is public on the <a href="#/feedback">feedback page</a>.</p>
+    </form>
+  );
+}
