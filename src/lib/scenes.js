@@ -91,7 +91,8 @@ function keysOf(d, table) {
 }
 function mkTable(name, cols, rows, opt = {}) {
   const key = (c) => opt.keys?.[String(c).toLowerCase()];
-  const w = cols.map((c, i) => Math.min(26, Math.max(String(c).length + (key(c) ? 4 : 0), ...rows.map((r) => cellText(r.vals[i]).length), 2)));
+  const sized = [...rows.map((r) => r.vals), ...(opt.sizeRows || [])]; // sizeRows: rows that will be added later
+  const w = cols.map((c, i) => Math.min(26, Math.max(String(c).length + (key(c) ? 4 : 0), ...sized.map((v) => cellText(v[i]).length), 2)));
   // 0.6em = one monospace character (more exact than ch for Geist Mono), plus cell padding on both sides
   const tpl = w.map((x) => `calc(${x} * 0.6em + 2 * var(--cell-x) + 2px)`).join(' ');
   const cc = (i) => (opt.colColors?.[i] ? ` class="cc" style="--cc:${opt.colColors[i]}"` : '');
@@ -1044,7 +1045,7 @@ async function setScene(s, d) {
   metrics([['a', 'SELECT #1 rows'], ['b', parts.length > 2 ? 'Other SELECTs' : 'SELECT #2 rows'], ['dup', 'Duplicates dropped'], ['ret', 'Result']]);
   legend([...parts.map((_, i) => [PALETTE[i], `SELECT #${i + 1}`]), ['var(--bad)', 'dropped']]);
   const srcT = res.map((r, i) => mkTable(`SELECT #${i + 1}`, r.columns, r.values.map((v, j) => ({ rid: j, vals: v })), { color: PALETTE[i] }));
-  const out = mkTable('result', res[0].columns, [], { color: 'var(--s-result)' });
+  const out = mkTable('result', res[0].columns, [], { color: 'var(--s-result)', sizeRows: res.flatMap((r) => r.values) });
   board(srcT.map((t) => t.el), out.el);
   caption('Separate queries', 'Each SELECT runs on its own first. Same number of columns in each!'); hl(none);
   await enter(...srcT);
