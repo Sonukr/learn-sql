@@ -128,6 +128,7 @@ function place(t, rids, gaps) {
     const r = t.rows.get(rid);
     r.el.style.transform = `translateY(${y}px)`;
     r.el.classList.remove('gone');
+    r.el.classList.toggle('last', i === rids.length - 1 || !!gaps?.has(i + 1)); // no divider under the last row of the table or a group
     y += RH;
   });
   t.rows.forEach((r, rid) => { if (!vis.has(rid)) r.el.classList.add('gone'); });

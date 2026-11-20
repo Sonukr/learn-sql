@@ -14,6 +14,8 @@ import FeedbackList from './components/FeedbackList';
 
 export const LESSONS = MODULES.flatMap((m, mi) => m.lessons.map((l, li) => ({ ...l, mod: m, modNo: mi + 1, no: li + 1 })));
 export const pad = (n) => String(n).padStart(2, '0');
+// Header theme picker. Each id except 'system' has a matching :root[data-theme="id"] block in theme.css.
+const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark'], ['latte', 'Latte']];
 
 // localStorage can throw (private mode, blocked storage); progress is a convenience, so fail quietly.
 const store = {
@@ -46,7 +48,7 @@ export default function App() {
 
   const [done, setDone] = useState(() => store.get('done', []));
   const [drawer, setDrawer] = useState(false);
-  const [theme, setTheme] = useState(() => store.get('theme', null));
+  const [theme, setTheme] = useState(() => store.get('theme', null) || 'system');
   const [ds, setDs] = useState(getDataset); // your imported data (kept in IndexedDB)
   useEffect(() => { const off = onDataset(setDs); loadSaved(); return off; }, []);
   const [modeState, setModeState] = useState({ k: '', m: '' });
@@ -69,7 +71,10 @@ export default function App() {
   useEffect(() => { if (step === lesson.steps.length - 1 && !s.expect) markDone(); }, [stepKey]);
   useEffect(() => { document.title = `${feedbackPage ? 'Feedback' : myData ? 'My Data' : lesson.title} · Learn SQL`; setDrawer(false); }, [stepKey, myData, feedbackPage]);
   useEffect(() => { if (!myData && !feedbackPage) stepView(lesson.id, step, { module: lesson.mod.title }); }, [stepKey, myData, feedbackPage]);
-  useEffect(() => { if (theme) document.documentElement.dataset.theme = theme; }, [theme]);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'system') delete root.dataset.theme; else root.dataset.theme = theme;
+  }, [theme]);
 
   const next = () => {
     if (step < lesson.steps.length - 1) return go(lesson.id, step + 2);
@@ -80,11 +85,7 @@ export default function App() {
     const pl = LESSONS[idx - 1];
     if (pl) go(pl.id, pl.steps.length);
   };
-  const toggleTheme = () => {
-    const dark = theme ? theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-    const t = dark ? 'light' : 'dark';
-    setTheme(t); store.set('theme', t);
-  };
+  const pickTheme = (t) => { setTheme(t); store.set('theme', t); };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -110,7 +111,11 @@ export default function App() {
         <span className="spacer" />
         <SearchBox />
         <span className="spacer" />
-        <button className="icon-btn" aria-label="Toggle dark mode" onClick={toggleTheme}>◐</button>
+        <label className="theme-pick"><span aria-hidden="true">◐</span>
+          <select value={theme} aria-label="Theme" onChange={(e) => pickTheme(e.target.value)}>
+            {THEMES.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
+        </label>
       </header>
 
       <div className="shell">

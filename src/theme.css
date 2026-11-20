@@ -1,7 +1,8 @@
 /* All colors live here. Each token is light-dark(<light value>, <dark value>); the rest of the CSS and the
    scenes only use these var(--…) names, never raw hex.
-   Light/dark follows the OS unless <html data-theme="light|dark"> is set (the ◐ button).
-   A new theme = one block that overrides these tokens, e.g. :root[data-palette="ocean"] { --accent: …; } */
+   Themes are picked in the header (THEMES in src/App.jsx) and set as <html data-theme="…">:
+   no attribute = follow the OS (light/dark), "light", "dark", or a named theme like "latte".
+   A new theme = one :root[data-theme="name"] block below that overrides these tokens + one entry in THEMES. */
 :root {
   color-scheme: light dark;
 
@@ -56,16 +57,47 @@
   --cat-dcl: #0e7490;
   --cat-tcl: #0f766e;
 
+  /* page areas: each can have its own background (Latte tints them like pastel cards) */
+  --area-top: var(--panel);     /* header bar */
+  --area-course: var(--panel);  /* course outline (left) */
+  --area-lesson: var(--panel);  /* lesson card (middle) */
+  --area-step: var(--panel);    /* step card (right) */
+  --area-learn: var(--panel);   /* "You'll learn" card */
+  --tile-1: var(--card); --tile-2: var(--card); --tile-3: var(--card); --tile-4: var(--card); /* metric tiles, in turn */
+
   /* tables (scene tables, editor results, concept models); --row-h must match RH in src/lib/scenes.js */
   --row-h: 34px;
   --cell-x: 12px;
   --cell-y: 7px;
-  --table-head-size: 11.5px;
+  --table-head-size: .92em;  /* relative, so headers shrink with the table on phones */
   --table-rule: color-mix(in srgb, var(--line) 85%, transparent);
 
   /* fonts: --sans for the interface, --mono for SQL, code and the scene tables (their widths use ch units) */
-  --sans: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "Geist Mono", ui-monospace, Menlo, monospace;
 }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
+
+/* Latte: warm cream, peach and sage (light only) */
+:root[data-theme="latte"] {
+  color-scheme: light;
+  --bg: #f6efe6; --panel: #fbf6ef; --card: #fffaf4; --card-2: #f2e7da;
+  --ink: #2e241d; --muted: #62544a; --line: #eadccb; --edge: #dfcdb8;
+  --grid: rgba(160, 120, 90, .07); --null: #a3907f;
+  --accent: #954420; --accent-soft: #f7dccd; --on-accent: #ffffff;
+  --amber: #96600f; --amber-soft: #f6e5bd; --on-amber: #ffffff;
+  --violet: #6f5f9e; --violet-soft: #e8e2f1;
+  --bad: #b03d34; --bad-soft: #f6dad4; --on-bad: #ffffff;
+  --good: #44704f; --good-soft: #dde8d6;
+  --s1: #df8c5c; --s2: #6f9a7e; --s3: #8395c2; --s4: #d4706f; --s5: #c9a24a; --s6: #7a9a55;
+  --s-result: #954420; --s-bad: #b03d34; --s-neutral: #5a4a3e;
+  --cat-alias: #9a4f30; --cat-where: #4f6f96; --cat-order-by: #84600f; --cat-group-by: #44704f;
+  --cat-join: #a0502e; --cat-functions: #a23f3a; --cat-window-functions: #67589a;
+  --cat-ddl: #964463; --cat-dml: #75589a; --cat-dcl: #3d7180; --cat-tcl: #47725d;
+  --area-top: var(--bg); --area-course: #d6e0cf; --area-lesson: #f7dfcf; --area-step: #f8eac7; --area-learn: #dde2ea;
+  --tile-1: #e2e8d5; --tile-2: #f6d8c6; --tile-3: #f8e8c1; --tile-4: #dce1ea;
+}
+
+/* phones: tighter table cells so more columns fit */
+@media (max-width: 560px) { :root { --cell-x: 9px; } }
