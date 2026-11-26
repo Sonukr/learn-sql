@@ -19,6 +19,9 @@ a { color: inherit; }
 .hl { background: linear-gradient(transparent 55%, var(--accent-soft) 55%); }
 .icon-btn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 16px; }
 .icon-btn:hover { border-color: var(--muted); }
+.top-link { display: flex; align-items: center; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 500; font-size: 13px; text-decoration: none; white-space: nowrap; }
+.top-link:hover { border-color: var(--muted); }
+.top-link.active { background: var(--accent-soft); border-color: var(--accent); }
 .theme-pick { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 8px 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
 .theme-pick:hover, .theme-pick:focus-within { border-color: var(--muted); }
 .theme-pick select { border: 0; background: transparent; color: inherit; font: 500 13px var(--sans); cursor: pointer; padding: 4px 2px; outline: none; }
@@ -345,6 +348,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
   .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; width: 100%; }
   .metric { min-width: 0; padding: 4px 7px; box-shadow: 0 2px 0 var(--edge); }
   .controls .lbl { display: none; }
+  .top-link .lbl { display: none; } /* icon only, so header fits one row */
   .metric small { font-size: 9px; }
   .metric b { font-size: 14px; }
   .controls { width: 100%; }
@@ -645,3 +649,22 @@ a.btn { text-decoration: none; display: inline-block; }
 @media (max-width: 960px) { .fb-page { grid-column: auto; } }
 
 .slab.priv td, .slab.schema td { border-bottom: 0; }
+
+/* Practice (#/practice) */
+.practice { grid-column: span 2; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; background: var(--area-lesson); }
+.practice .crumb a { color: inherit; }
+.pr-tools { display: flex; flex-direction: column; gap: 10px; }
+.pr-tools input { font: 13.5px var(--sans); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.pr-topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.pr-topics button { font: 500 12px var(--sans); padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.pr-topics button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.pr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pr-list a { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; text-decoration: none; background: var(--card); border: 1px solid var(--line); font-size: 13.5px; }
+.pr-list a:hover { border-color: var(--accent); }
+.pr-list b { font-weight: 600; min-width: 2.2em; }
+.pr-list .chip { margin-left: auto; color: var(--accent); background: var(--accent-soft); }
+.pr-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pr-actions .spacer { flex: 1; }
+.pr-solution { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); font-size: 12.5px; overflow-x: auto; white-space: pre-wrap; }
+@media (max-width: 960px) { .practice { grid-column: auto; } }
+.practice > * { order: 0 !important; } /* keep source order: the course mobile layout reorders .lesson-head */
