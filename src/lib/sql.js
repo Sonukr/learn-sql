@@ -13,8 +13,71 @@ const PRAGMAS = 'PRAGMA foreign_keys = ON; PRAGMA automatic_index = OFF;';
 export function openDb(bytes) {
   const d = new SQL.Database(bytes);
   d.run(PRAGMAS);
+  for (const [name, fn] of Object.entries(MYSQL_FNS)) d.create_function(name, fn);
   return d;
 }
+
+// MySQL functions SQLite lacks, as user-defined functions (arity = fn.length, so optional args need their own name).
+// Dates are 'YYYY-MM-DD' / 'YYYY-MM-DD HH:MM:SS' text, computed in UTC so results don't depend on the time zone.
+const pad2 = (n) => String(n).padStart(2, '0');
+const toD = (v) => (v == null ? null : new Date(String(v).replace(' ', 'T').replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T00:00:00') + 'Z'));
+const ymd = (d) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+const ymdhms = (d) => `${ymd(d)} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}`;
+const hasTime = (v) => /\d:\d/.test(String(v));
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function addUnit(v, n, unit) {
+  const d = toD(v); if (!d || isNaN(d)) return null;
+  n = Number(n); const u = String(unit).toUpperCase();
+  if (u === 'MONTH' || u === 'YEAR' || u === 'QUARTER') { // MySQL clamps to the month's last day: Jan 31 + 1 month = Feb 29
+    const months = n * (u === 'YEAR' ? 12 : u === 'QUARTER' ? 3 : 1), day = d.getUTCDate();
+    d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + months);
+    d.setUTCDate(Math.min(day, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));
+  } else d.setTime(d.getTime() + n * { WEEK: 6048e5, DAY: 864e5, HOUR: 36e5, MINUTE: 6e4, SECOND: 1e3 }[u]);
+  return hasTime(v) || /HOUR|MINUTE|SECOND/.test(u) ? ymdhms(d) : ymd(d);
+}
+function part(unit, v) {
+  const d = toD(v); if (!d || isNaN(d)) return null;
+  return { YEAR: d.getUTCFullYear(), MONTH: d.getUTCMonth() + 1, DAY: d.getUTCDate(), HOUR: d.getUTCHours(), MINUTE: d.getUTCMinutes(),
+    SECOND: d.getUTCSeconds(), QUARTER: Math.floor(d.getUTCMonth() / 3) + 1, WEEK: Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 6048e5) }[String(unit).toUpperCase()];
+}
+const MYSQL_FNS = {
+  curdate: () => ymd(new Date()), now: () => ymdhms(new Date()),
+  year: (v) => part('YEAR', v), month: (v) => part('MONTH', v), day: (v) => part('DAY', v), dayofmonth: (v) => part('DAY', v),
+  quarter: (v) => part('QUARTER', v), hour: (v) => part('HOUR', v),
+  dayofweek: (v) => { const d = toD(v); return d && !isNaN(d) ? d.getUTCDay() + 1 : null; }, // 1 = Sunday, like MySQL
+  weekday: (v) => { const d = toD(v); return d && !isNaN(d) ? (d.getUTCDay() + 6) % 7 : null; }, // 0 = Monday
+  dayname: (v) => { const d = toD(v); return d && !isNaN(d) ? DAYS[d.getUTCDay()] : null; },
+  monthname: (v) => { const d = toD(v); return d && !isNaN(d) ? MONTHS[d.getUTCMonth()] : null; },
+  last_day: (v) => { const d = toD(v); return d && !isNaN(d) ? ymd(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0))) : null; },
+  datediff: (a, b) => { const x = toD(String(a).slice(0, 10)), y = toD(String(b).slice(0, 10)); return a == null || b == null ? null : Math.round((x - y) / 864e5); },
+  date_add: (v, n, u) => addUnit(v, n, u), date_sub: (v, n, u) => addUnit(v, -n, u),
+  __extract: (u, v) => part(u, v),
+  timestampdiff: (u, a, b) => { // whole units from a to b
+    const x = toD(a), y = toD(b); if (!x || !y) return null; const U = String(u).toUpperCase();
+    if (U === 'YEAR' || U === 'MONTH' || U === 'QUARTER') {
+      let m = (y.getUTCFullYear() - x.getUTCFullYear()) * 12 + y.getUTCMonth() - x.getUTCMonth();
+      const rest = (t) => ((t.getUTCDate() * 24 + t.getUTCHours()) * 60 + t.getUTCMinutes()) * 60 + t.getUTCSeconds();
+      if (m > 0 && rest(y) < rest(x)) m--; else if (m < 0 && rest(y) > rest(x)) m++; // a month only counts once its day/time is reached, like MySQL
+      return Math.trunc(m / (U === 'YEAR' ? 12 : U === 'QUARTER' ? 3 : 1));
+    }
+    return Math.trunc((y - x) / { WEEK: 6048e5, DAY: 864e5, HOUR: 36e5, MINUTE: 6e4, SECOND: 1e3 }[U]);
+  },
+  date_format: (v, f) => {
+    const d = toD(v); if (!d || isNaN(d)) return null;
+    const m = { Y: d.getUTCFullYear(), y: String(d.getUTCFullYear()).slice(2), m: pad2(d.getUTCMonth() + 1), c: d.getUTCMonth() + 1, d: pad2(d.getUTCDate()), e: d.getUTCDate(),
+      M: MONTHS[d.getUTCMonth()], b: MONTHS[d.getUTCMonth()].slice(0, 3), W: DAYS[d.getUTCDay()], a: DAYS[d.getUTCDay()].slice(0, 3),
+      H: pad2(d.getUTCHours()), i: pad2(d.getUTCMinutes()), s: pad2(d.getUTCSeconds()), '%': '%' };
+    return String(f).replace(/%([a-zA-Z%])/g, (x, k) => (k in m ? m[k] : k));
+  },
+  char_length: (s) => (s == null ? null : [...String(s)].length),
+  locate: (sub, s) => (sub == null || s == null ? null : String(s).toLowerCase().indexOf(String(sub).toLowerCase()) + 1),
+  lpad: (s, n, p) => (s == null ? null : String(s).padStart(n, p).slice(0, n)), rpad: (s, n, p) => (s == null ? null : String(s).padEnd(n, p).slice(0, n)),
+  substring_index: (s, delim, n) => {
+    if (s == null) return null; const parts = String(s).split(delim); n = Number(n);
+    return (n >= 0 ? parts.slice(0, n) : parts.slice(n)).join(delim);
+  },
+};
 // `extra` = a lesson's own setup (e.g. the 50,000-row page_views table), run after the shop data.
 export function freshDb(extra) { const d = openDb(); d.run(SETUP_SQL); if (extra) d.run(extra); return d; }
 
@@ -167,8 +230,29 @@ function shimQuantified(sql) {
   return sql;
 }
 
+// SELECT … GROUP BY col WITH ROLLUP → the grouped rows plus one grand-total row with col = NULL.
+// ponytail: one grouping column only; multi-column rollups would need one UNION branch per level.
+function shimRollup(sql) {
+  return sql.replace(/^\s*SELECT\s+([\s\S]+?)\s+FROM\s+([\s\S]+?)\s+GROUP\s+BY\s+([\w.]+)\s+WITH\s+ROLLUP\b([\s\S]*)$/i, (_, list, from, col, rest) => {
+    const total = list.replace(new RegExp(`(^|[\\s,(])${col.replace('.', '\\.')}(?=\\s|,|\\)|$)`, 'g'), '$1NULL');
+    return `SELECT * FROM (SELECT ${list} FROM ${from} GROUP BY ${col} UNION ALL SELECT ${total} FROM ${from})${rest.trim() ? ' ' + rest : ''}`;
+  });
+}
+
 export function toSqlite(sql) {
-  return shimQuantified(sql)
+  return shimRollup(shimQuantified(sql))
+    // dates: d ± INTERVAL n UNIT, DATE_ADD(d, INTERVAL n UNIT), EXTRACT(UNIT FROM d), TIMESTAMPDIFF(UNIT, a, b)
+    .replace(/(\w+\(\)|'[^']*'|[\w.]+)\s*([+-])\s*INTERVAL\s+(-?[\w.]+|'[^']*')\s+(YEAR|QUARTER|MONTH|WEEK|DAY|HOUR|MINUTE|SECOND)\b/gi,
+      (_, d, op, n, u) => `DATE_ADD(${d}, ${op === '-' ? '-' : ''}(${n}), '${u}')`)
+    // any expression up to the unit word, e.g. INTERVAL ROW_NUMBER() OVER (…) DAY
+    .replace(/\bINTERVAL\s+([^;]+?)\s+(YEAR|QUARTER|MONTH|WEEK|DAY|HOUR|MINUTE|SECOND)\b/gi, "($1), '$2'")
+    .replace(/\bEXTRACT\s*\(\s*(\w+)\s+FROM\b/gi, "__extract('$1',")
+    .replace(/\bTIMESTAMPDIFF\s*\(\s*(\w+)\s*,/gi, "timestampdiff('$1',")
+    .replace(/\bPOSITION\s*\(\s*('[^']*'|[\w.]+)\s+IN\s+/gi, 'locate($1, ')
+    // GROUP_CONCAT(x [ORDER BY …] SEPARATOR 's') → SQLite's group_concat(x, 's' [ORDER BY …])
+    .replace(/\bGROUP_CONCAT\s*\(((?:[^()]|\([^()]*\))*?)(\s+ORDER\s+BY\s+(?:[^()]|\([^()]*\))*?)?\s+SEPARATOR\s+('[^']*')\s*\)/gi,
+      (_, x, ord = '', sep) => `group_concat(${x}, ${sep}${ord})`)
+    .replace(/\bAS\s+(?:UNSIGNED|SIGNED)(?:\s+INTEGER)?\s*\)/gi, 'AS INTEGER)')
     .replace(/(^|;)(\s*)(CREATE\s+TABLE[^;]*)/gi, (_, p, ws, st) => p + ws + shimCreate(st))
     .replace(/DROP\s+INDEX\s+`?(\w+)`?\s+ON\s+\w+/gi, 'DROP INDEX $1')
     // only at statement start, so "ORDER BY x DESC LIMIT 3" is left alone
@@ -213,8 +297,23 @@ function execOne(d, b0) {
     b = b.replace(/^(?:CREATE\s+OR\s+REPLACE|ALTER)\s+VIEW/i, 'CREATE VIEW');
   }
   if ((m = b.match(/\bFULL\s+(?:OUTER\s+)?JOIN\b[\s\S]{0,25}/i))) fail(syntax(m[0])); // MySQL has no FULL JOIN
+  aliasInWhere(d, b);
   const res = d.exec(toSqlite(b));
   return res[res.length - 1] || null;
+}
+
+// MySQL runs WHERE before SELECT, so a SELECT alias can't be used in WHERE (SQLite would allow it).
+// ponytail: checks the outer query's WHERE only; aliases inside subqueries aren't checked.
+function aliasInWhere(d, sql) {
+  if (!/^\s*SELECT\b/i.test(sql)) return;
+  const flat = mask(sql.replace(/'(?:[^']|'')*'/g, (q) => '_'.repeat(q.length)));
+  const list = flat.match(/^\s*SELECT\s+([\s\S]*?)\s+FROM\s/i)?.[1] || '';
+  const aliases = [...list.matchAll(/\bAS\s+`?(\w+)`?/gi)].map((x) => x[1].toLowerCase());
+  const where = (whereOf(flat) || '').toLowerCase();
+  if (!aliases.length || !where) return;
+  const real = new Set(d.exec("SELECT p.name FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type IN ('table', 'view')")[0]?.values.map((r) => String(r[0]).toLowerCase()));
+  const bad = aliases.find((a) => !real.has(a) && new RegExp(`(^|[^\\w.])${a}(?![\\w.(])`).test(where));
+  if (bad) fail(`ERROR 1054 (42S22): Unknown column '${bad}' in 'where clause'`);
 }
 
 // ---- indexes as MySQL reports them ----

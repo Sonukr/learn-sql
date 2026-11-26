@@ -154,7 +154,8 @@ const POOL = [
         id: 'select', title: 'SELECT: Choosing Columns', minutes: 10, level: 'Beginner',
         summary: 'Ask for exactly the columns you need, rename them, and compute new ones.',
         learn: ['Picking specific columns', 'Renaming output with <code>AS</code>', 'Arithmetic in queries',
-          'Built-in functions like <code>UPPER</code> and <code>ROUND</code>', 'Removing duplicates with <code>DISTINCT</code>'],
+          'Built-in functions like <code>UPPER</code> and <code>ROUND</code>', 'Removing duplicates with <code>DISTINCT</code>',
+          'The order MySQL runs a query in'],
         steps: [
           {
             title: 'Ask only for what you need', short: 'Columns',
@@ -1746,6 +1747,162 @@ JOIN products p …</pre><small>a saved query: no rows are stored</small></div>
   },
 };
 
+// Built-in functions (text, numbers, NULLs, dates, JSON): a lesson of its own in the Summarising module.
+NEW.functions = {
+  id: 'functions', title: 'Built-in Functions', minutes: 16, level: 'Intermediate',
+  summary: 'Slice text, round numbers, tame NULLs and do date maths with MySQL’s built-in functions.',
+  learn: ['Text: <code>CHAR_LENGTH</code>, <code>SUBSTRING</code>, <code>SUBSTRING_INDEX</code>, <code>LOCATE</code>, <code>REPLACE</code>, <code>TRIM</code>, <code>REVERSE</code>',
+    'Many rows into one string with <code>GROUP_CONCAT</code>', 'Numbers: <code>CEIL</code>, <code>FLOOR</code>, <code>ABS</code>, <code>POWER</code>, <code>MOD</code>',
+    'NULL helpers and <code>CAST</code>', 'Dates: <code>DATE_ADD</code>, <code>DATEDIFF</code>, <code>TIMESTAMPDIFF</code>, <code>EXTRACT</code>, <code>DATE_FORMAT</code>'],
+  steps: [
+    {
+      title: 'Measure and cut text', short: 'Text',
+      sql: "SELECT name,\n       CHAR_LENGTH(name) AS letters,\n       SUBSTRING(name, 1, 3) AS first3,\n       SUBSTRING_INDEX(name, ' ', 1) AS first_name,\n       SUBSTRING_INDEX(name, ' ', -1) AS last_name\nFROM customers;",
+      body: `<p><code>SUBSTRING(s, start, length)</code> counts from 1. <code>SUBSTRING_INDEX(s, ' ', 1)</code> keeps everything before the first space; <code>-1</code> keeps everything after the last one, which is how you split a full name.</p>
+        <p><code>CHAR_LENGTH</code> counts characters. <code>LENGTH</code> counts <b>bytes</b>, so “é” is 2. (SQL Server calls it <code>LEN</code>.)</p>`,
+    },
+    {
+      title: 'Find, replace, trim', short: 'Find',
+      sql: "SELECT email,\n       LOCATE('@', email) AS at_pos,\n       SUBSTRING(email, LOCATE('@', email) + 1) AS domain,\n       REPLACE(name, ' ', '_') AS handle,\n       REVERSE(name) AS backwards,\n       TRIM('   hi   ') AS trimmed\nFROM customers;",
+      body: `<p><code>LOCATE(needle, text)</code> returns the position of the first match, or 0. <code>INSTR(text, needle)</code> and <code>POSITION(needle IN text)</code> do the same.</p>
+        <p><code>TRIM</code> strips spaces at both ends (<code>LTRIM</code> / <code>RTRIM</code> one side). <code>CONCAT(a, b)</code> and <code>CONCAT_WS(' ', a, b)</code> glue text back together.</p>`,
+    },
+    {
+      title: 'Many rows into one string', short: 'GROUP_CONCAT',
+      sql: "SELECT category,\n       GROUP_CONCAT(name ORDER BY name SEPARATOR ', ') AS products\nFROM products\nGROUP BY category;",
+      body: `<p><code>GROUP_CONCAT</code> is an aggregate like <code>SUM</code>, but for text: it joins every value in the group. You can sort inside it and pick the separator.</p>
+        <p>PostgreSQL and SQL Server call this <code>STRING_AGG</code>; MySQL doesn’t have that name.</p>`,
+    },
+    {
+      title: 'Round, absolute, power, remainder', short: 'Numbers',
+      sql: "SELECT name, price,\n       CEIL(price) AS up,\n       FLOOR(price) AS down,\n       ABS(price - 40) AS distance_from_40,\n       POWER(2, 3) AS eight,\n       CASE WHEN MOD(stock, 2) = 0 THEN 'even' ELSE 'odd' END AS stock_parity\nFROM products;",
+      body: `<p><code>CEIL</code> rounds up, <code>FLOOR</code> rounds down, <code>ROUND(x, 2)</code> to the nearest. <code>MOD(a, b)</code> (or <code>a % b</code>) is the remainder, the classic test for odd and even.</p>`,
+    },
+    {
+      title: 'NULL helpers and CAST', short: 'NULLs',
+      sql: "SELECT name,\n       IFNULL(city, 'unknown') AS city,\n       NULLIF(city, 'Mumbai') AS not_mumbai,\n       CAST('42' AS UNSIGNED) + 1 AS forty_three,\n       LEAST(id, 4) AS capped_id\nFROM customers;",
+      body: `<p><code>IFNULL(x, fallback)</code> and <code>COALESCE(a, b, c)</code> replace NULLs. <code>NULLIF(a, b)</code> does the opposite: it returns NULL when a = b (handy to avoid dividing by zero). <code>GREATEST</code> / <code>LEAST</code> pick across columns.</p>
+        <p><code>CAST(x AS UNSIGNED | SIGNED | CHAR | DATE | DECIMAL(10,2))</code> converts types. SQL Server’s two-argument <code>ISNULL(x, y)</code> is <code>IFNULL</code> in MySQL.</p>`,
+    },
+    {
+      title: 'Date maths', short: 'Date maths',
+      sql: "SELECT name, joined_on,\n       DATE_ADD(joined_on, INTERVAL 1 MONTH) AS trial_ends,\n       joined_on - INTERVAL 7 DAY AS week_before,\n       DATEDIFF('2024-07-31', joined_on) AS days_member,\n       TIMESTAMPDIFF(MONTH, joined_on, '2024-07-31') AS months_member\nFROM customers;",
+      body: `<p><code>DATE_ADD(d, INTERVAL n UNIT)</code> / <code>DATE_SUB</code> (or <code>d + INTERVAL n DAY</code>) move a date. <code>DATEDIFF(a, b)</code> gives days; <code>TIMESTAMPDIFF(YEAR, birth, CURDATE())</code> gives whole years, which is how you calculate an age.</p>
+        <p><code>CURDATE()</code> is today and <code>NOW()</code> the date and time. SQL Server’s <code>GETDATE()</code> and <code>DATEADD()</code> don’t exist in MySQL.</p>`,
+    },
+    {
+      title: 'Date parts and formats', short: 'Date parts',
+      sql: "SELECT ordered_on,\n       YEAR(ordered_on) AS y,\n       MONTH(ordered_on) AS m,\n       DAY(ordered_on) AS d,\n       EXTRACT(QUARTER FROM ordered_on) AS q,\n       DAYNAME(ordered_on) AS weekday,\n       DATE_FORMAT(ordered_on, '%d %b %Y') AS pretty,\n       LAST_DAY(ordered_on) AS month_end\nFROM orders;",
+      body: `<p><code>YEAR</code>, <code>MONTH</code>, <code>DAY</code> and <code>EXTRACT(unit FROM d)</code> pull parts out. <code>DATE_FORMAT</code> builds text: <code>%Y</code> year, <code>%m</code> month, <code>%d</code> day, <code>%b</code> short month name. To group by month, use <code>DATE_FORMAT(d, '%Y-%m')</code>; PostgreSQL’s <code>DATE_TRUNC</code> isn’t in MySQL.</p>`,
+    },
+    {
+      title: 'Read JSON values', short: 'JSON',
+      sql: "SELECT JSON_EXTRACT('{\"size\": \"L\", \"tags\": [\"eco\", \"new\"]}', '$.tags[0]') AS first_tag,\n       '{\"size\": \"L\"}' ->> '$.size' AS size;",
+      body: `<p>MySQL has a JSON column type. <code>JSON_EXTRACT(doc, '$.path')</code> (or <code>doc -&gt; '$.path'</code>) reads a value; <code>-&gt;&gt;</code> also removes the quotes.</p>`,
+    },
+    {
+      title: 'Your turn: tidy customer cards', short: 'Challenge',
+      sql: '-- first_name, the email domain in UPPERCASE, and the join month like "Jan 2024"\n',
+      expect: "SELECT SUBSTRING_INDEX(name, ' ', 1) AS first_name, UPPER(SUBSTRING_INDEX(email, '@', -1)) AS domain, DATE_FORMAT(joined_on, '%b %Y') AS joined FROM customers;",
+      body: `<p>For every customer show <code>first_name</code>, the email <code>domain</code> in UPPERCASE (everything after the @), and <code>joined</code> as the month and year, like <b>Jan 2024</b>.</p>`,
+    },
+  ],
+};
+
+// Extra steps for existing lessons, inserted before each lesson's final challenge.
+const MORE = {
+  select: [{
+    title: 'How MySQL runs a query', short: 'Order',
+    body: `<p>You <b>write</b> a query starting with <code>SELECT</code>, but MySQL <b>runs</b> it in a different order:</p>
+      <ol><li><code>FROM</code> / <code>JOIN</code>: pick the tables and combine them</li><li><code>WHERE</code>: drop rows that don’t match</li>
+      <li><code>GROUP BY</code>: put the rows into groups</li><li><code>HAVING</code>: drop groups that don’t match</li>
+      <li><code>SELECT</code>: compute the columns (and aliases)</li><li><code>DISTINCT</code>: remove duplicate rows</li>
+      <li><code>ORDER BY</code>: sort</li><li><code>LIMIT</code> / <code>OFFSET</code>: keep only some rows</li></ol>
+      <p>Each step only sees the output of the step before it. You’ll meet GROUP BY and HAVING in Summarising.</p>`,
+    key: 'Written: SELECT … FROM … WHERE … GROUP BY … HAVING … ORDER BY … LIMIT. Run: FROM → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT.',
+    viz: `<div class="model-row flow">
+      <div class="block pop" style="--c:var(--s1)"><b>1 · FROM</b><small>pick tables, JOIN</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s2);--d:.1s"><b>2 · WHERE</b><small>filter rows</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s3);--d:.2s"><b>3 · GROUP BY</b><small>make groups</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s4);--d:.3s"><b>4 · HAVING</b><small>filter groups</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s5);--d:.4s"><b>5 · SELECT</b><small>columns, aliases</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s6);--d:.5s"><b>6 · DISTINCT</b><small>drop duplicates</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s1);--d:.6s"><b>7 · ORDER BY</b><small>sort</small></div><span class="flow-arrow">→</span>
+      <div class="block pop" style="--c:var(--s2);--d:.7s"><b>8 · LIMIT</b><small>keep the first rows</small></div>
+    </div>`,
+  }, {
+    title: 'Why the order matters', short: 'Aliases',
+    sql: 'SELECT name, price * 1.18 AS with_tax\nFROM products\nWHERE price > 20\nORDER BY with_tax DESC;',
+    body: `<p>Because <code>SELECT</code> runs after <code>WHERE</code>, an alias made in SELECT <b>doesn’t exist yet</b> in WHERE, but <code>ORDER BY</code> (which runs later) can use it.</p>
+      <p>In the Editor, change the WHERE to <code>WHERE with_tax &gt; 30</code>: MySQL answers <i>ERROR 1054 Unknown column 'with_tax'</i>. Repeat the expression instead: <code>WHERE price * 1.18 &gt; 30</code>.</p>`,
+  }],
+  aggregates: [{
+    title: 'Count each value once', short: 'COUNT DISTINCT',
+    sql: 'SELECT COUNT(*) AS orders,\n       COUNT(DISTINCT customer_id) AS customers_who_ordered\nFROM orders;',
+    body: `<p><code>COUNT(DISTINCT col)</code> counts different values: 12 orders, but only 7 different customers placed them.</p>`,
+  }],
+  'group-by': [{
+    title: 'Subtotals with ROLLUP', short: 'ROLLUP',
+    sql: 'SELECT category,\n       COUNT(*) AS products,\n       SUM(stock) AS units\nFROM products\nGROUP BY category WITH ROLLUP;',
+    body: `<p><code>WITH ROLLUP</code> adds a grand-total row (with <code>NULL</code> in the grouped column) after the groups. With several GROUP BY columns it adds a subtotal per level.</p>
+      <p>PostgreSQL and SQL Server also have <code>GROUPING SETS</code> and <code>CUBE</code>; MySQL has only <code>ROLLUP</code>.</p>`,
+  }],
+  'more-joins': [{
+    title: 'JOIN … USING', short: 'USING',
+    sql: 'SELECT o.id AS order_id, c.name\nFROM orders o\nJOIN (SELECT id AS customer_id, name FROM customers) c USING (customer_id);',
+    body: `<p>When both sides share the column name, <code>USING (col)</code> is a shorter <code>ON a.col = b.col</code>, and the column appears only once in <code>SELECT *</code>.</p>`,
+  }],
+  subqueries: [{
+    title: 'Name a subquery with WITH (CTE)', short: 'CTE',
+    sql: 'WITH avg_price AS (\n  SELECT AVG(price) AS p FROM products\n)\nSELECT name, price\nFROM products, avg_price\nWHERE price > avg_price.p;',
+    body: `<p>A <b>Common Table Expression</b> names a subquery up front, so the main query reads top to bottom. It can be used several times and chained: <code>WITH a AS (…), b AS (… FROM a …)</code>.</p>
+      <p>CTE vs subquery is about readability: the optimizer usually runs both the same way, and a CTE stores nothing.</p>`,
+  }, {
+    title: 'WITH RECURSIVE: generate rows', short: 'Recursive',
+    sql: "WITH RECURSIVE days AS (\n  SELECT DATE('2024-07-01') AS day\n  UNION ALL\n  SELECT day + INTERVAL 1 DAY FROM days WHERE day < '2024-07-07'\n)\nSELECT d.day, COUNT(o.id) AS orders\nFROM days d\nLEFT JOIN orders o ON o.ordered_on = d.day\nGROUP BY d.day\nORDER BY d.day;",
+    body: `<p>A recursive CTE has a <b>starting row</b>, then a part that refers to itself and adds rows until its WHERE stops it. Here it makes every date from 1 to 7 July, so days with no orders still show 0.</p>
+      <p>The same pattern walks hierarchies: employees → their managers → their managers.</p>`,
+  }],
+  'window-basics': [{
+    title: 'ROWS vs RANGE frames', short: 'RANGE',
+    sql: 'SELECT id, ordered_on, quantity,\n       SUM(quantity) OVER (ORDER BY ordered_on ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS by_rows,\n       SUM(quantity) OVER (ORDER BY ordered_on RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS by_range\nFROM orders;',
+    body: `<p><code>ROWS</code> counts physical rows; <code>RANGE</code> counts by <b>value</b>, so rows with the same date are treated as one step. Look at 1 July: <code>by_rows</code> grows row by row, <code>by_range</code> jumps straight to the day’s total.</p>`,
+  }],
+  ranking: [{
+    title: 'Percentiles: PERCENT_RANK and CUME_DIST', short: 'Percentiles',
+    sql: 'SELECT name, price,\n       ROUND(PERCENT_RANK() OVER (ORDER BY price), 2) AS pct_rank,\n       ROUND(CUME_DIST() OVER (ORDER BY price), 2) AS cume_dist\nFROM products;',
+    body: `<p><code>PERCENT_RANK</code> = how far up the list a row is (0 to 1). <code>CUME_DIST</code> = the share of rows at or below this value.</p>
+      <p><code>PERCENTILE_CONT</code> / <code>PERCENTILE_DISC</code> (median) exist in PostgreSQL and SQL Server, not MySQL.</p>`,
+  }],
+  'set-ops': [{
+    title: 'Unpivot: columns into rows', short: 'Unpivot',
+    sql: "SELECT name, 'price' AS metric, price AS value FROM products\nUNION ALL\nSELECT name, 'stock', stock FROM products\nORDER BY name, metric;",
+    body: `<p>MySQL has no <code>UNPIVOT</code> keyword: one <code>SELECT</code> per column, stacked with <code>UNION ALL</code>, does the job. The opposite, <b>pivot</b>, uses <code>SUM(CASE WHEN … THEN … END)</code> per column (see the CASE lesson).</p>`,
+  }],
+  'create-table': [{
+    title: 'CREATE TABLE … AS SELECT', short: 'CTAS',
+    sql: "CREATE TABLE home_products AS\nSELECT id, name, price FROM products WHERE category = 'Home';\nSELECT * FROM home_products;",
+    body: `<p>Creates a table and fills it from a query in one go: handy for snapshots and test copies. It copies column types and data, but <b>not</b> keys or indexes.</p>`,
+  }],
+  normalization: [{
+    title: 'BCNF, 4NF and 5NF', short: 'BCNF+',
+    body: `<p>Past 3NF the rules get stricter, and real schemas rarely need more:</p>
+      <ul><li><b>BCNF</b>: every column that determines another must be a candidate key. If an instructor teaches only one course, <code>instructor → course</code> needs its own table.</li>
+      <li><b>4NF</b>: no unrelated multi-valued facts in one table. A student’s skills and hobbies go in two tables, not one with every combination.</li>
+      <li><b>5NF</b>: split a table only if it can be rebuilt exactly by joining the parts, never creating fake rows.</li></ul>
+      <p>Memory trick: atomic → whole key → nothing but the key → every determinant a key → no multi-valued → no join anomalies.</p>`,
+    viz: `<div class="model-row"><div class="dep pop">
+      <div><span class="k">instructor</span><span class="arrow-r">→</span><span class="v">course</span><span class="arrow-r">BCNF: a determinant that isn’t a key</span></div>
+      <div><span class="k">student</span><span class="arrow-r">→→</span><span class="v">skill</span><span class="v">hobby</span><span class="arrow-r">4NF: two independent lists</span></div>
+      <div><span class="k">order</span><span class="arrow-r">⋈</span><span class="v">product</span><span class="v">store</span><span class="arrow-r">5NF: rebuild only by joining</span></div>
+    </div></div>`,
+  }],
+};
+for (const [id, steps] of Object.entries(MORE)) {
+  const l = POOL.flatMap((m) => m.lessons).concat(Object.values(NEW)).find((x) => x.id === id);
+  l.steps.splice(l.steps.length - 1, 0, ...steps);
+}
+
 // The course follows the SQL mind map's branches, each with a friendly name.
 const BY_ID = Object.fromEntries(POOL.flatMap((m) => m.lessons).concat(Object.values(NEW)).map((l) => [l.id, l]));
 // cats = the mind map's top-level branches this module covers (coloured like the map); tag = its keywords.
@@ -1760,7 +1917,7 @@ export const MODULES = [
   mod('Foundations', ['DML', 'ALIAS'], 'SELECT · AS · DESCRIBE', ['tables', 'select']),
   mod('Filtering', ['WHERE'], 'COMPARISONS · AND/OR/NOT · IN · LIKE', ['where']),
   mod('Sorting', ['ORDER BY'], 'ASC · DESC · LIMIT', ['order-limit']),
-  mod('Summarising', ['FUNCTIONS', 'GROUP BY'], 'COUNT · SUM · AVG · HAVING', ['aggregates', 'group-by']),
+  mod('Summarising', ['FUNCTIONS', 'GROUP BY'], 'COUNT · SUM · HAVING · TEXT · DATES', ['aggregates', 'group-by', 'functions']),
   mod('Combining Tables', ['JOIN'], 'INNER · LEFT · RIGHT · CROSS', ['joins', 'more-joins']),
   mod('Advanced Querying', ['DML', 'WHERE'], 'CASE · UNION · EXISTS · ANY/ALL', ['case', 'set-ops', 'subqueries']),
   mod('Window Functions', ['WINDOW FUNCTIONS'], 'OVER · RANK · LAG', ['window-basics', 'ranking', 'value-functions']),
