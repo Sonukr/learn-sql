@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Upload, Compass, Eye, Database, CircleCheck, Trash2, ArrowRight } from 'lucide-react';
 import { importFiles, importSql, clearDataset, openDataset, MAX_IMPORT_BYTES } from '../lib/importer';
 import Stage from './Stage';
 import { track } from '../lib/analytics';
@@ -20,8 +21,8 @@ function Header({ tab, ds, title, summary }) {
         <p className="summary">{summary}</p>
       </div>
       <div className="seg md-tabs" role="tablist" aria-label="My Data">
-        <a role="tab" aria-selected={tab !== 'explore'} href="#/my-data/import">⇪ Import</a>
-        <a role="tab" aria-selected={tab === 'explore'} href="#/my-data/explore" aria-disabled={!ds} onClick={(e) => { if (!ds) e.preventDefault(); }}>◉ Explore</a>
+        <a role="tab" aria-selected={tab !== 'explore'} href="#/my-data/import"><Upload /> Import</a>
+        <a role="tab" aria-selected={tab === 'explore'} href="#/my-data/explore" aria-disabled={!ds} onClick={(e) => { if (!ds) e.preventDefault(); }}><Compass /> Explore</a>
       </div>
     </div>
   );
@@ -38,7 +39,7 @@ function Tables({ ds, onPick }) {
             <b>{t.name}</b><small>{fmt(t.rows)} rows · {t.columns.length} cols</small>
           </summary>
           <ul>{t.columns.map((c) => <li key={c.name}><span>{c.name}</span><code>{c.type || '—'}</code></li>)}</ul>
-          {onPick && <button className="btn" onClick={() => onPick(t)}>◉ Visualise SELECT</button>}
+          {onPick && <button className="btn" onClick={() => onPick(t)}><Eye /> Visualise SELECT</button>}
         </details>
       ))}
     </section>
@@ -70,7 +71,7 @@ function Import({ ds, tab }) {
             onClick={() => file.current.click()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.current.click(); } }}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
             onDrop={(e) => { e.preventDefault(); setOver(false); onFiles(e.dataTransfer.files); }}>
-            <div className="dz-ic" aria-hidden="true">⛁</div>
+            <div className="dz-ic" aria-hidden="true"><Database /></div>
             <b>{busy ? 'Importing…' : 'Drop a MySQL dump (.sql) or CSV files here'}</b>
             <small>or click to choose files · several CSVs become several tables · up to {MAX_IMPORT_BYTES / 1048576} MB in total</small>
             <input ref={file} type="file" multiple accept=".sql,.csv,.tsv,.txt" hidden onChange={(e) => { onFiles(e.target.files); e.target.value = ''; }} />
@@ -80,7 +81,7 @@ function Import({ ds, tab }) {
             <summary>…or paste SQL (CREATE TABLE + INSERT statements)</summary>
             <textarea value={paste} onChange={(e) => setPaste(e.target.value)} spellCheck={false}
               placeholder={"CREATE TABLE books (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(100), year INT);\nINSERT INTO books (title, year) VALUES ('Dune', 1965), ('Neuromancer', 1984);"} />
-            <button className="btn primary" disabled={!paste.trim() || busy} onClick={() => run(async () => done(importSql(paste, 'pasted')))}>⇪ Import SQL</button>
+            <button className="btn primary" disabled={!paste.trim() || busy} onClick={() => run(async () => done(importSql(paste, 'pasted')))}><Upload /> Import SQL</button>
             <small className="paste-size">{(new Blob([paste]).size / 1048576).toFixed(2)} / {MAX_IMPORT_BYTES / 1048576} MB</small>
           </details>
 
@@ -89,7 +90,7 @@ function Import({ ds, tab }) {
           {ds && !busy && (
             <div className="md-result">
               <div className="md-result-head">
-                <b>✓ {ds.name}</b>
+                <b><CircleCheck /> {ds.name}</b>
                 <span>{ds.tables.length} table{ds.tables.length === 1 ? '' : 's'} · {fmt(ds.tables.reduce((n, t) => n + t.rows, 0))} rows{ds.ms != null && ` · imported in ${(ds.ms / 1000).toFixed(2)} s`}</span>
               </div>
               {ds.warnings?.length > 0 && (
@@ -99,8 +100,8 @@ function Import({ ds, tab }) {
                 </details>
               )}
               <div className="run-row">
-                <a className="btn primary" href="#/my-data/explore">◉ Explore your data →</a>
-                <button className="btn" onClick={() => { if (confirm(`Remove "${ds.name}" from this browser?`)) clearDataset(); }}>🗑 Remove data</button>
+                <a className="btn primary" href="#/my-data/explore"><Compass /> Explore your data <ArrowRight /></a>
+                <button className="btn" onClick={() => { if (confirm(`Remove "${ds.name}" from this browser?`)) clearDataset(); }}><Trash2 /> Remove data</button>
               </div>
             </div>
           )}

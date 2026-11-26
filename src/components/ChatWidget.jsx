@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { MessageCircle, X, Sparkles, MessageSquareText, Check, Star } from 'lucide-react';
 import { recommendations, summary, lastError, track } from '../lib/analytics';
 
 // Tiny, safe markdown: escape everything, then allow ```code```, `code`, **bold** and links into the course (#/…) only.
@@ -17,19 +18,26 @@ export default function ChatWidget({ lessons, lesson, step, done }) {
   const [tab, setTab] = useState('tutor');
   const page = lesson ? `${lesson.title} · step ${step + 1}` : location.hash.startsWith('#/my-data') ? 'My Data' : 'Course';
   useEffect(() => { if (open) track('chat_open', { tab }); }, [open]);
+  useEffect(() => { // Escape closes the panel
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, [open]);
 
   return (
     <>
       <button className={`chat-fab${open ? ' open' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="chat-panel"
-        aria-label={open ? 'Close the tutor' : 'Ask the tutor or send feedback'}>{open ? '×' : '💬'}</button>
+        aria-label={open ? 'Close the tutor' : 'Ask the tutor or send feedback'}>{open ? <X /> : <MessageCircle />}</button>
       {open && (
         <section className="chat-panel" id="chat-panel" role="dialog" aria-label="Tutor and feedback">
           <header className="chat-head">
             <div className="seg" role="tablist">
-              <button role="tab" aria-selected={tab === 'tutor'} onClick={() => setTab('tutor')}>✦ Tutor</button>
-              <button role="tab" aria-selected={tab === 'feedback'} onClick={() => setTab('feedback')}>✎ Feedback</button>
+              <button role="tab" aria-selected={tab === 'tutor'} onClick={() => setTab('tutor')}><Sparkles /> Tutor</button>
+              <button role="tab" aria-selected={tab === 'feedback'} onClick={() => setTab('feedback')}><MessageSquareText /> Feedback</button>
             </div>
             <small>{page}</small>
+            <button className="icon-btn chat-close" onClick={() => setOpen(false)} aria-label="Close" title="Close (Esc)"><X /></button>
           </header>
           {tab === 'tutor'
             ? <Tutor lessons={lessons} lesson={lesson} step={step} done={done} />
@@ -136,7 +144,7 @@ function Feedback({ lesson, page, done, lessons }) {
   };
 
   if (state.sent) return (
-    <div className="chat-list"><div className="msg bot">✓ Thanks! Your feedback was saved. <a href="#/feedback">See all feedback</a></div>
+    <div className="chat-list"><div className="msg bot"><Check /> Thanks! Your feedback was saved. <a href="#/feedback">See all feedback</a></div>
       <button className="btn" onClick={() => setState({ busy: false, sent: false, error: null })}>Send more</button></div>
   );
   return (
@@ -144,7 +152,7 @@ function Feedback({ lesson, page, done, lessons }) {
       <fieldset className="stars">
         <legend>How is the course so far?</legend>
         {[1, 2, 3, 4, 5].map((n) => (
-          <button type="button" key={n} aria-pressed={rating === n} aria-label={`${n} of 5`} className={n <= rating ? 'on' : ''} onClick={() => setRating(n)}>★</button>
+          <button type="button" key={n} aria-pressed={rating === n} aria-label={`${n} of 5`} className={n <= rating ? 'on' : ''} onClick={() => setRating(n)}><Star /></button>
         ))}
       </fieldset>
       <label>Your name <small>(optional, shown on the feedback page)</small>

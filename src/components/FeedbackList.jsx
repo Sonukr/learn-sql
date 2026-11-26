@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ListOrdered, Star } from 'lucide-react';
 
 // Read-only view of everything sent through the Feedback tab (#/feedback). No edit or delete, by design.
 export default function FeedbackList() {
@@ -18,11 +19,11 @@ export default function FeedbackList() {
         <div>
           <div className="crumb">Feedback / All entries</div>
           <h1>Learner feedback</h1>
-          <p className="summary">Everything sent from the 💬 Feedback tab, newest first. Entries can't be edited or deleted.</p>
+          <p className="summary">Everything sent from the chat’s Feedback tab, newest first. Entries can't be edited or deleted.</p>
         </div>
         {list && <div className="badges">
-          <span className="badge steps">☰ {list.length} entries</span>
-          {avg && <span className="badge time">★ {avg} average</span>}
+          <span className="badge steps"><ListOrdered /> {list.length} entries</span>
+          {avg && <span className="badge time"><Star /> {avg} average</span>}
         </div>}
       </div>
       {error && <div className="err" role="alert">{error}</div>}
@@ -33,7 +34,7 @@ export default function FeedbackList() {
           <li key={f.id}>
             <div className="fb-meta">
               <b className="fb-name">{f.name || 'Anonymous'}</b>
-              <span className="fb-stars" aria-label={f.rating ? `${f.rating} of 5` : 'No rating'}>{f.rating ? '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating) : '—'}</span>
+              <span className="fb-stars" aria-label={f.rating ? `${f.rating} of 5` : 'No rating'}>{f.rating ? [1, 2, 3, 4, 5].map((n) => <Star key={n} className={n <= f.rating ? 'on' : ''} />) : '—'}</span>
               <span className="chip">{f.category}</span>
               <time dateTime={f.at}>{new Date(f.at).toLocaleString()}</time>
             </div>

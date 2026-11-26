@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Eye, Code, RotateCw, Play, Pause, FileCode } from 'lucide-react';
 import { play, stop, setPaused } from '../lib/scenes';
 import EditorPane from './EditorPane';
 
@@ -33,12 +34,12 @@ export default function Stage({ step, stepKey, setup, custom, onVisualise, mode,
         <div className="metrics" ref={refs.metrics} hidden={!visual} />
         <div className="controls">
           <div className="seg" role="tablist" aria-label="Stage mode">
-            <button role="tab" aria-selected={visual} onClick={() => setMode('visual')}>◉ Visual</button>
-            <button role="tab" aria-selected={!visual} onClick={() => setMode('editor')} disabled={!step.sql}>⌨ Editor</button>
+            <button role="tab" aria-selected={visual} onClick={() => setMode('visual')}><Eye /> Visual</button>
+            <button role="tab" aria-selected={!visual} onClick={() => setMode('editor')} disabled={!step.sql}><Code /> Editor</button>
           </div>
           {visual && <>
-            <button className="btn" onClick={() => setTick((t) => t + 1)} title="Replay (R)" aria-label="Replay">↻<span className="lbl"> Replay</span></button>
-            <button className="btn" onClick={() => setPaused(!paused)} title="Pause (Space)" aria-label={paused ? 'Play' : 'Pause'}>{paused ? '▶' : '❚❚'}<span className="lbl">{paused ? ' Play' : ' Pause'}</span></button>
+            <button className="btn" onClick={() => setTick((t) => t + 1)} title="Replay (R)" aria-label="Replay"><RotateCw /><span className="lbl">Replay</span></button>
+            <button className="btn" onClick={() => setPaused(!paused)} title="Pause (Space)" aria-label={paused ? 'Play' : 'Pause'}>{paused ? <Play /> : <Pause />}<span className="lbl">{paused ? 'Play' : 'Pause'}</span></button>
           </>}
         </div>
       </div>
@@ -52,7 +53,7 @@ export default function Stage({ step, stepKey, setup, custom, onVisualise, mode,
       <div className="stage-foot" hidden={!visual}>
         <div className="legend" ref={refs.legend} />
         <div className="qcard" hidden={!step.sql || !!step.expect}>
-          <div className="qhead"><span>⚑ THE QUERY</span><button onClick={() => setMode('editor')}>Edit &amp; run ⌨</button></div>
+          <div className="qhead"><span><FileCode /> THE QUERY</span><button onClick={() => setMode('editor')}>Edit &amp; run <Code /></button></div>
           <pre ref={refs.qcode} />
         </div>
       </div>

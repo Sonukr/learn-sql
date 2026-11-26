@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Menu, Database, PenLine, SunMoon, Clock, Signal, ListOrdered } from 'lucide-react';
 import { MODULES } from './lessons';
 import { freshDb } from './lib/sql';
 import CourseTree, { Cats } from './components/CourseTree';
@@ -104,18 +105,18 @@ export default function App() {
   const nextLesson = LESSONS[idx + 1];
   const nextLabel = step < lesson.steps.length - 1
     ? `Next: ${lesson.steps[step + 1].short || lesson.steps[step + 1].title}`
-    : nextLesson ? `Next lesson: ${nextLesson.title}` : 'Finish ✓';
+    : nextLesson ? `Next lesson: ${nextLesson.title}` : 'Finish';
 
   return (
     <>
       <header className="top">
-        <button className="icon-btn menu" aria-label="Open course outline" aria-expanded={drawer} onClick={() => setDrawer(!drawer)}>☰</button>
-        <a className="logo" href="#/"><span className="logo-mark" aria-hidden="true">⛁</span> Learn SQL</a>
+        <button className="icon-btn menu" aria-label="Open course outline" aria-expanded={drawer} onClick={() => setDrawer(!drawer)}><Menu /></button>
+        <a className="logo" href="#/"><span className="logo-mark" aria-hidden="true"><Database /></span> Learn SQL</a>
         <span className="spacer" />
         <SearchBox />
         <span className="spacer" />
-        <a href="#/practice" className={`top-link${pr ? ' active' : ''}`} aria-current={pr ? 'page' : undefined} aria-label="Practice" title="Practice">✎<span className="lbl"> Practice</span></a>
-        <label className="theme-pick"><span aria-hidden="true">◐</span>
+        <a href="#/practice" className={`top-link${pr ? ' active' : ''}`} aria-current={pr ? 'page' : undefined} aria-label="Practice" title="Practice"><PenLine /><span className="lbl">Practice</span></a>
+        <label className="theme-pick"><SunMoon aria-hidden="true" />
           <select value={theme} aria-label="Theme" onChange={(e) => pickTheme(e.target.value)}>
             {THEMES.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
@@ -135,9 +136,9 @@ export default function App() {
               <p className="summary">{lesson.summary}</p>
             </div>
             <div className="badges">
-              <span className="badge time">◷ {lesson.minutes} min</span>
-              <span className="badge level">▮▮ {lesson.level}</span>
-              <span className="badge steps">☰ {lesson.steps.length} steps</span>
+              <span className="badge time"><Clock /> {lesson.minutes} min</span>
+              <span className="badge level"><Signal /> {lesson.level}</span>
+              <span className="badge steps"><ListOrdered /> {lesson.steps.length} steps</span>
             </div>
           </div>
           <Stage step={s} stepKey={stepKey} setup={lesson.setup} mode={mode} setMode={setMode}

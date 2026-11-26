@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { Play, Eye, Undo2, RotateCcw, CircleDot } from 'lucide-react';
 import { attempt, exec, READ_ONLY, fmt, tableCounts, txOpen } from '../lib/sql';
 import { meta } from '../lib/admin';
 import { queryRun } from '../lib/analytics';
@@ -68,17 +69,17 @@ export default function EditorPane({ step, stepKey, db, onResetDb, onSolved, onV
       <div className="tables">
         tables:
         {tableCounts(db).map(([n, c]) => <button key={n} onClick={() => peek(n)} title={`Peek at ${n}`}>{n} ({c})</button>)}
-        {meta(db).use !== 'shop' && <span className="tx">● USE {meta(db).use}</span>}
-        {txOpen(db) && <span className="tx">● transaction open (uncommitted)</span>}
+        {meta(db).use !== 'shop' && <span className="tx"><CircleDot /> USE {meta(db).use}</span>}
+        {txOpen(db) && <span className="tx"><CircleDot /> transaction open (uncommitted)</span>}
       </div>
       <Suspense fallback={<pre className="sql-loading">{sql}</pre>}>
         <SqlEditor value={sql} onChange={setSql} onRun={run} schema={schema} />
       </Suspense>
       <div className="run-row">
-        <button className="btn primary" onClick={run}>▶ Run <kbd>Ctrl ↵</kbd></button>
-        {onVisualise && <button className="btn" onClick={() => onVisualise(sql)} title="Animate this query">◉ Visualise</button>}
-        {!onVisualise && <button className="btn" onClick={() => setSql(step.sql)} title="Restore this step's query">↺ Restore query</button>}
-        <button className="btn" onClick={onResetDb} title="Rebuild the practice database">⟲ Reset data</button>
+        <button className="btn primary" onClick={run}><Play /> Run <kbd>Ctrl ↵</kbd></button>
+        {onVisualise && <button className="btn" onClick={() => onVisualise(sql)} title="Animate this query"><Eye /> Visualise</button>}
+        {!onVisualise && <button className="btn" onClick={() => setSql(step.sql)} title="Restore this step's query"><Undo2 /> Restore query</button>}
+        <button className="btn" onClick={onResetDb} title="Rebuild the practice database"><RotateCcw /> Reset data</button>
         {users.length > 0 && (
           <label className="run-as">Run as
             <select value={asUser} onChange={(e) => setAsUser(e.target.value)}>

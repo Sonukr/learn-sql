@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { freshDb } from '../lib/sql';
 import { QUESTIONS, TOPICS, PRACTICE_SETUP } from '../practice';
 import EditorPane from './EditorPane';
@@ -49,7 +50,7 @@ function List({ done }) {
         {shown.map((q) => (
           <li key={q.id}>
             <a href={`#/practice/${q.id}`}>
-              <span className={`file ${done.includes(q.id) ? 'done' : ''}`}>{done.includes(q.id) ? '✓' : ''}</span>
+              <span className={`file ${done.includes(q.id) ? 'done' : ''}`}>{done.includes(q.id) && <Check />}</span>
               <b>{q.no}.</b> {q.title}
               <span className="chip">{q.topic}</span>
             </a>
@@ -74,7 +75,7 @@ function Question({ q, done, onSolved }) {
   const prev = QUESTIONS[q.no - 2], next = QUESTIONS[q.no];
   return (
     <main className="card practice">
-      <Head title={`${q.no}. ${q.title}`} summary={done.includes(q.id) ? '✓ Solved. Try another way, or move on.' : 'Write a query, press Run, and it’s checked against a model answer.'}>
+      <Head title={`${q.no}. ${q.title}`} summary={done.includes(q.id) ? 'Solved. Try another way, or move on.' : 'Write a query, press Run, and it’s checked against a model answer.'}>
         {' / '}<span className="chip">{q.topic}</span>
       </Head>
       <div className="step-body" dangerouslySetInnerHTML={{ __html: q.body }} />
@@ -83,9 +84,9 @@ function Question({ q, done, onSolved }) {
         <button className="btn" onClick={() => setSolution(!solution)} aria-expanded={solution}>{solution ? 'Hide solution' : 'Show solution'}</button>
         <a className="btn" href={`#/${q.learn}/1`}>Learn this</a>
         <span className="spacer" />
-        {prev && <a className="btn" href={`#/practice/${prev.id}`}>← {prev.no}</a>}
+        {prev && <a className="btn" href={`#/practice/${prev.id}`}><ArrowLeft /> {prev.no}</a>}
         <a className="btn" href="#/practice">All questions</a>
-        {next && <a className="btn primary" href={`#/practice/${next.id}`}>{next.no} →</a>}
+        {next && <a className="btn primary" href={`#/practice/${next.id}`}>{next.no} <ArrowRight /></a>}
       </div>
       {solution && <pre className="pr-solution">{q.expect.replace(/ (FROM|WHERE|GROUP BY|HAVING|ORDER BY|LIMIT|UNION ALL|UNION|INTERSECT|EXCEPT|JOIN|LEFT JOIN|SELECT)\b/g, '\n$1')}</pre>}
     </main>

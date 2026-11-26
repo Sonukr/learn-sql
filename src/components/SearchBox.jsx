@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
 import { MODULES } from '../lessons';
 import { Cats } from './CourseTree';
 import { searched } from '../lib/analytics';
@@ -87,7 +88,7 @@ export default function SearchBox() {
 
   return (
     <div className="search" role="search">
-      <span className="search-ic" aria-hidden="true">⌕</span>
+      <Search className="search-ic" aria-hidden="true" />
       <input ref={input} type="search" value={q} placeholder="Search methods: JOIN, RANK, GRANT…" aria-label="Search lessons and SQL methods"
         aria-expanded={open && !!q} aria-controls="search-results" aria-activedescendant={results[sel] ? `sr-${sel}` : undefined}
         onChange={(e) => { setQ(e.target.value); setSel(0); setOpen(true); }}
