@@ -59,7 +59,7 @@ export default function SearchBox() {
 
   useEffect(() => {
     const onKey = (e) => {
-      const typing = e.target.closest?.('input, textarea, select');
+      const typing = e.target.closest?.('input, textarea, select, [contenteditable]');
       if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !typing)) {
         e.preventDefault();
         input.current.focus();

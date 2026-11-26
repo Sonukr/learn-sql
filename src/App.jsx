@@ -92,7 +92,7 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (myData || page || e.target.closest?.('textarea, input')) return;
+      if (myData || page || e.target.closest?.('textarea, input, [contenteditable]')) return;
       if (e.key === 'ArrowRight') next();
       if (e.key === 'ArrowLeft') back();
       if (e.key === 'Escape') setDrawer(false);

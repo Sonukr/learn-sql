@@ -19,7 +19,7 @@ export default function Stage({ step, stepKey, setup, custom, onVisualise, mode,
   useEffect(() => {
     if (!visual) return;
     const onKey = (e) => {
-      if (e.target.closest('textarea, input, button, summary, a')) return;
+      if (e.target.closest('textarea, input, button, summary, a, [contenteditable]')) return;
       if (e.key === 'r' || e.key === 'R') setTick((t) => t + 1);
       if (e.key === ' ') { e.preventDefault(); setPaused(!paused); }
     };

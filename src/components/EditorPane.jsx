@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { attempt, exec, READ_ONLY, fmt, tableCounts, txOpen } from '../lib/sql';
 import { meta } from '../lib/admin';
 import { queryRun } from '../lib/analytics';
+const SqlEditor = lazy(() => import('./SqlEditor')); // CodeMirror loads only when an editor is first opened
 
 const MAX = 200; // rendering 50,000 rows would freeze the page
 
@@ -38,8 +39,8 @@ export default function EditorPane({ step, stepKey, db, onResetDb, onSolved, onV
   const [out, setOut] = useState(null);
   const [asUser, setAsUser] = useState(step.as || '');
   const users = [...meta(db).users.keys()];
-  const ta = useRef(null);
 
+  const [schema] = useState(() => Object.fromEntries(tableCounts(db).map(([n]) => [n, db.exec(`PRAGMA table_info("${n}")`)[0]?.values.map((r) => r[1]) || []])));
   const run = () => {
     meta(db).as = asUser || null; // privileges are checked as this user
     let o;
@@ -55,7 +56,6 @@ export default function EditorPane({ step, stepKey, db, onResetDb, onSolved, onV
     const done = meta(db).preDone;
     if (step.pre && !done.includes(stepKey)) { done.push(stepKey); try { exec(step.pre, db); } catch { /* already set up */ } }
     if (!step.expect && READ_ONLY.test(step.sql)) run();
-    ta.current?.focus();
   }, []);
 
   const peek = (name) => {
@@ -71,10 +71,9 @@ export default function EditorPane({ step, stepKey, db, onResetDb, onSolved, onV
         {meta(db).use !== 'shop' && <span className="tx">● USE {meta(db).use}</span>}
         {txOpen(db) && <span className="tx">● transaction open (uncommitted)</span>}
       </div>
-      <label className="sr-only" htmlFor="editor">SQL editor</label>
-      <textarea id="editor" ref={ta} spellCheck={false} autoComplete="off" value={sql}
-        onChange={(e) => setSql(e.target.value)}
-        onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } }} />
+      <Suspense fallback={<pre className="sql-loading">{sql}</pre>}>
+        <SqlEditor value={sql} onChange={setSql} onRun={run} schema={schema} />
+      </Suspense>
       <div className="run-row">
         <button className="btn primary" onClick={run}>▶ Run <kbd>Ctrl ↵</kbd></button>
         {onVisualise && <button className="btn" onClick={() => onVisualise(sql)} title="Animate this query">◉ Visualise</button>}
